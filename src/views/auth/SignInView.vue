@@ -19,15 +19,13 @@ const handleSubmit = async (event: Event) => {
   isSubmitted.value = true;
 
   try {
-    const { status, data: { access_token, user: { name, role }, message } } = await axios.post('auth/login', {
+    const { status, data: { access_token, message } } = await axios.post('auth/login', {
       username: username.value,
       password: password.value
     });
 
     if (status >= 200 && status < 300) {
       sessionStorage.setItem("access_token", access_token);
-      sessionStorage.setItem("name", name);
-      sessionStorage.setItem("role", role);
 
       toast.add({
         severity: 'success',
