@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
-const router = useRouter()
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import { useToast } from 'primevue/usetoast';
+
+const router = useRouter();
+const toast = useToast();
+
 const username = ref('');
 const password = ref('');
 const isSubmitted = ref(false);
-const errorMessage = ref('');
 
 const handleSubmit = async (event: Event) => {
   event.preventDefault();
-  errorMessage.value = '';
   isSubmitted.value = true;
 
   try {
@@ -24,68 +28,91 @@ const handleSubmit = async (event: Event) => {
       sessionStorage.setItem("access_token", access_token);
       sessionStorage.setItem("name", name);
       sessionStorage.setItem("role", role);
-      router.push('/');
+
+      toast.add({
+        severity: 'success',
+        summary: 'Login Successful',
+        detail: 'Redirecting to dashboard',
+        life: 3000
+      });
+
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
     } else {
-      errorMessage.value = message || 'Sign in failed';
+      toast.add({
+        severity: 'error',
+        summary: 'Login Failed',
+        detail: message || 'Sign in failed',
+        life: 3000
+      });
     }
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || 'An error occurred';
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'An error occurred',
+      life: 3000
+    });
   } finally {
     isSubmitted.value = false;
   }
 }
-
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-900">
-    <div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-lg shadow-xl border border-gray-700">
-      <div class="text-center">
-        <h1 class="text-3xl font-extrabold tracking-tight text-white">Welcome back</h1>
-        <p class="mt-2 text-sm text-gray-400">Sign in your account</p>
-      </div>
-
-      <form @submit="handleSubmit" class="mt-8 space-y-6">
-        <div class="rounded-md shadow-sm space-y-4">
-          <div>
-            <label for="username" class="sr-only">Username</label>
-            <input id="username" type="text" placeholder="Phoenix" v-model="username" required
-              class="w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-white bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" />
-          </div>
-          <div>
-            <label for="password" class="sr-only">Password</label>
-            <input id="password" type="password" placeholder="Password" v-model="password" required
-              class="w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-white bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" />
-          </div>
+  <div class="min-h-screen bg-gray-900 flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-md">
+      <div class="bg-gray-800 shadow-xl rounded-lg border border-gray-700 p-8 space-y-6">
+        <div class="text-center">
+          <h1 class="text-3xl font-extrabold text-white mb-2">Welcome back</h1>
+          <p class="text-sm text-gray-400">Sign in to your account</p>
         </div>
 
-        <div>
-          <button type="submit" :disabled="isSubmitted"
-            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed">
-            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-              <svg class="h-5 w-5 text-green-500 group-hover:text-green-400" xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd"
-                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                  clip-rule="evenodd" />
-              </svg>
-            </span>
-            {{ isSubmitted ? "Signing in..." : "Sign in" }}
-          </button>
+        <form @submit="handleSubmit" class="space-y-6">
+          <div class="space-y-4">
+            <div>
+              <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
+                Username
+              </label>
+              <InputText id="username" v-model="username" placeholder="Phoenix" class="w-full py-2 px-3 bg-gray-700 border border-gray-600 rounded-lg text-white 
+                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                       disabled:opacity-50 disabled:cursor-not-allowed" :disabled="isSubmitted" required />
+            </div>
+
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <InputText id="password" type="password" v-model="password" placeholder="Password" class="w-full py-2 px-3 bg-gray-700 border border-gray-600 rounded-lg text-white 
+                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                       disabled:opacity-50 disabled:cursor-not-allowed" :disabled="isSubmitted" required />
+            </div>
+          </div>
+
+          <Button type="submit" :disabled="isSubmitted" class="w-full py-2 px-4 bg-green-600 text-white rounded-lg
+                    hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+                    disabled:opacity-70 disabled:cursor-not-allowed">
+            {{ isSubmitted ? "Signing in..." : "Sign In" }}
+          </Button>
+        </form>
+
+        <div class="text-center mt-4">
+          <p class="text-sm text-gray-400">
+            Don't have an account?
+            <RouterLink to="/sign-up"
+              class="font-medium text-green-500 hover:text-green-400 transition-colors duration-200">
+              Sign up now!
+            </RouterLink>
+          </p>
         </div>
-      </form>
-
-      <p v-if="errorMessage" class="mt-2 text-red-500 text-sm">{{ errorMessage }}</p>
-
-      <div class="text-center mt-4">
-        <p class="text-sm text-gray-400">
-          Don't have an account?
-          <RouterLink to="/sign-up"
-            class="font-medium text-green-500 hover:text-green-400 cursor-pointer transition-colors duration-200">
-            Sign up now!
-          </RouterLink>
-        </p>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+:deep(.p-inputtext) {
+  width: 100%;
+}
+</style>

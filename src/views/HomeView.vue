@@ -3,6 +3,9 @@
 
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gray-900">
-    <h1 class="text-white">Home</h1>
+    <!-- History -->
+    <div id="w-1/2"></div>
+    <!-- Forms -->
+    <div id="w-1/2"></div>
   </div>
 </template>
