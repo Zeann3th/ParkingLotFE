@@ -77,10 +77,7 @@ router.beforeEach(async (to, _, next) => {
     }
   } catch (error) {
     console.error('Auth refresh failed:', error);
-    return next({
-      name: "auth.sign-in",
-      query: { redirect: to.fullPath }
-    });
+    return next({ name: "auth.sign-in" });
   }
 });
 
