@@ -7,6 +7,7 @@ import InboxView from "@/views/InboxView.vue";
 import TicketView from "@/views/TicketView.vue";
 import axios from "axios";
 import SettingView from "@/views/SettingView.vue";
+import NotFoundView from "@/views/NotFoundView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -52,6 +53,11 @@ const router = createRouter({
       meta: {
         requiresAuth: true
       },
+    },
+    {
+      path: "/:pathMatch(.*)*",
+      component: NotFoundView,
+      name: "not-found",
     }
   ]
 })
