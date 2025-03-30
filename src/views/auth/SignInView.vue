@@ -6,6 +6,7 @@ import axios from 'axios';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import { useToast } from 'primevue/usetoast';
+import { memoryStorage } from '@/storage';
 
 const router = useRouter();
 const toast = useToast();
@@ -25,7 +26,7 @@ const handleSubmit = async (event: Event) => {
     });
 
     if (status >= 200 && status < 300) {
-      sessionStorage.setItem("access_token", access_token);
+      memoryStorage.setToken(access_token);
 
       toast.add({
         severity: 'success',

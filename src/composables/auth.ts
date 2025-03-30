@@ -1,18 +1,25 @@
+
 import { ref, computed } from "vue";
 import { jwtDecode } from "jwt-decode";
+import { memoryStorage } from "@/storage";
 
 export function useAuth() {
-  const token = ref(sessionStorage.getItem("access_token"));
+  const token = ref(memoryStorage.getToken());
 
-  const role = computed(() => {
+  const decodedToken = computed(() => {
     if (!token.value) return null;
     try {
-      const decoded: any = jwtDecode(token.value);
-      return decoded.role;
+      return jwtDecode(token.value) as { role: string; username: string; email: string };
     } catch (e) {
       return null;
     }
   });
 
-  return { role };
+  const role = computed(() => decodedToken.value?.role || "");
+  const username = computed(() => decodedToken.value?.username || "");
+  const email = computed(() => decodedToken.value?.email || "");
+
+  console.log("Decoded Token:", decodedToken.value);
+  return { role, username, email };
 }
+

@@ -4,5 +4,5 @@ import MenuBar from '@/components/MenuBar.vue';
 
 <template>
   <MenuBar />
-  <h1>Home</h1>
+  <h1>Ticket View</h1>
 </template>

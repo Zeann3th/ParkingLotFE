@@ -1,8 +1,8 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import MenuBar from '@/components/MenuBar.vue';
 </script>
 
 <template>
   <MenuBar />
-  <h1>Home</h1>
+  <h1>Inbox</h1>
 </template>
