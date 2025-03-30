@@ -19,7 +19,6 @@ export function useAuth() {
   const username = computed(() => decodedToken.value?.username || "");
   const email = computed(() => decodedToken.value?.email || "");
 
-  console.log("Decoded Token:", decodedToken.value);
   return { role, username, email };
 }
 
