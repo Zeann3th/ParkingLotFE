@@ -37,7 +37,7 @@ const handleSubmit = async (event: Event) => {
       });
 
       setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard');
       }, 1000);
     } else {
       toast.add({
