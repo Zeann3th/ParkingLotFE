@@ -8,6 +8,7 @@ import TicketView from "@/views/TicketView.vue";
 import axios from "axios";
 import SettingView from "@/views/SettingView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
+import DashBoardView from "@/views/DashBoardView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,11 @@ const router = createRouter({
       path: "/",
       component: HomeView,
       name: "home",
+    },
+    {
+      path: "/dashboard",
+      component: DashBoardView,
+      name: "dashboard",
       meta: {
         requiresAuth: true
       }
@@ -60,7 +66,7 @@ const router = createRouter({
       name: "not-found",
     }
   ]
-})
+});
 
 router.beforeEach(async (to, _, next) => {
   if (!to.meta.requiresAuth) {
