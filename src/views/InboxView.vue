@@ -73,7 +73,7 @@ const loadNotification = async (id: number) => {
       </DataTable>
 
       <div v-else class="space-y-2">
-        <div v-for="(item, index) in skeletonItems" :key="index" class="p-4 border-b border-white/10">
+        <div v-for="(_, index) in skeletonItems" :key="index" class="p-4 border-b border-white/10">
           <div class="flex items-center space-x-3">
             <Skeleton width="3rem" height="2rem" class="mb-2"></Skeleton>
             <div class="flex-1">
