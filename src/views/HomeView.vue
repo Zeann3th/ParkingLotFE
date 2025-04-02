@@ -5,6 +5,8 @@ import axios from 'axios';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import { useToast } from 'primevue/usetoast';
+import { memoryStorage } from '@/storage';
+import router from '@/router';
 
 interface Pricing {
   type: 'DAILY' | 'MONTHLY' | 'RESERVED';
@@ -35,6 +37,27 @@ const sortedPricing = computed<Pricing[]>(() => {
     return typeComparison !== 0 ? typeComparison : (vehicleOrder[a.vehicleType] || 99) - (vehicleOrder[b.vehicleType] || 99);
   });
 });
+
+const handleSignIn = async () => {
+  const token = memoryStorage.getToken();
+  if (token) {
+    router.push('/dashboard');
+  }
+
+  try {
+    const response = await axios.get("/auth/refresh");
+
+    if (response.status === 200 && response.data.access_token) {
+      memoryStorage.setToken(response.data.access_token);
+      router.push('/dashboard');
+    } else {
+      throw new Error('Invalid refresh response');
+    }
+  } catch (error) {
+    console.error('Auth refresh failed:', error);
+    router.push('/sign-in');
+  }
+}
 </script>
 
 <template>
@@ -45,10 +68,9 @@ const sortedPricing = computed<Pricing[]>(() => {
         class="text-2xl font-bold bg-gradient-to-r from-blue-300 to-white bg-clip-text text-transparent">ParkingHub
       </RouterLink>
       <div class="flex gap-4">
-        <RouterLink to="/sign-in">
-          <Button label="Sign In"
-            class="rounded-full bg-white/10 hover:bg-white/20 px-6 py-3 border-none shadow-lg text-white" />
-        </RouterLink>
+        <Button label="Sign In"
+          class="rounded-full bg-white/10 hover:bg-white/20 px-6 py-3 border-none shadow-lg text-white"
+          @click="handleSignIn()" />
         <RouterLink to="/sign-up">
           <Button label="Get Started"
             class="rounded-full bg-blue-500 hover:bg-blue-600 px-6 py-3 border-none shadow-lg text-white" />
