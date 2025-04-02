@@ -224,12 +224,6 @@ const handleSubmit = async (event: Event) => {
 </template>
 
 <style scoped>
-:deep(.p-inputtext) {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(4px);
-}
-
 .floating-shape {
   position: absolute;
   border-radius: 50%;
