@@ -18,30 +18,41 @@ const router = createRouter({
       path: "/",
       component: HomeView,
       name: "home",
+      meta: {
+        title: "The Parking Hub",
+      }
     },
     {
       path: "/dashboard",
       component: DashBoardView,
       name: "dashboard",
       meta: {
+        title: "Dashboard",
         requiresAuth: true
       }
     },
     {
       path: "/sign-in",
       component: SignInView,
-      name: "auth.sign-in"
+      name: "auth.sign-in",
+      meta: {
+        title: "Sign In",
+      }
     },
     {
       path: "/sign-up",
       component: SignUpView,
-      name: "auth.sign-up"
+      name: "auth.sign-up",
+      meta: {
+        title: "Sign Up",
+      }
     },
     {
       path: "/parking",
       component: ParkingView,
       name: "parking",
       meta: {
+        title: "Parking",
         requiresAuth: true
       }
     },
@@ -50,6 +61,7 @@ const router = createRouter({
       component: InboxView,
       name: "inbox",
       meta: {
+        title: "Inbox",
         requiresAuth: true
       }
     },
@@ -58,6 +70,7 @@ const router = createRouter({
       component: TicketView,
       name: "tickets",
       meta: {
+        title: "Tickets",
         requiresAuth: true
       }
     },
@@ -66,6 +79,7 @@ const router = createRouter({
       component: SettingView,
       name: "settings",
       meta: {
+        title: "Settings",
         requiresAuth: true
       },
     },
@@ -73,17 +87,22 @@ const router = createRouter({
       path: "/:pathMatch(.*)*",
       component: NotFoundView,
       name: "not-found",
+      meta: {
+        title: "Not Found",
+      }
     }
   ]
 });
 
 router.beforeEach(async (to, _, next) => {
   if (!to.meta.requiresAuth) {
+    document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
     return next();
   }
 
   const token = memoryStorage.getToken();
   if (token) {
+    document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
     return next();
   }
 
@@ -92,12 +111,14 @@ router.beforeEach(async (to, _, next) => {
 
     if (response.status === 200 && response.data.access_token) {
       memoryStorage.setToken(response.data.access_token);
+      document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
       return next();
     } else {
       throw new Error('Invalid refresh response');
     }
   } catch (error) {
     console.error('Auth refresh failed:', error);
+    document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
     return next({ name: "auth.sign-in", query: { redirect: to.fullPath } });
   }
 });
