@@ -9,6 +9,7 @@ import axios from "axios";
 import SettingView from "@/views/SettingView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import DashBoardView from "@/views/DashBoardView.vue";
+import ParkingView from "@/views/ParkingView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -35,6 +36,14 @@ const router = createRouter({
       path: "/sign-up",
       component: SignUpView,
       name: "auth.sign-up"
+    },
+    {
+      path: "/parking",
+      component: ParkingView,
+      name: "parking",
+      meta: {
+        requiresAuth: true
+      }
     },
     {
       path: "/inbox",
@@ -89,7 +98,7 @@ router.beforeEach(async (to, _, next) => {
     }
   } catch (error) {
     console.error('Auth refresh failed:', error);
-    return next({ name: "auth.sign-in" });
+    return next({ name: "auth.sign-in", query: { redirect: to.fullPath } });
   }
 });
 

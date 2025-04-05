@@ -7,7 +7,6 @@ import Avatar from 'primevue/avatar';
 import Skeleton from 'primevue/skeleton';
 import Button from 'primevue/button';
 import Paginator from 'primevue/paginator';
-import InputText from 'primevue/inputtext';
 import { memoryStorage } from '@/storage';
 import { useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
@@ -38,10 +37,9 @@ const skeletonItems = Array(5).fill({});
 const route = useRoute();
 const router = useRouter();
 
-const totalRecords = ref(0);
+const totalPages = ref(1);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
-const searchQuery = ref('');
 
 const fetchNotifications = async () => {
   loading.value = true;
@@ -53,11 +51,10 @@ const fetchNotifications = async () => {
       params: {
         page: currentPage.value,
         limit: rowsPerPage.value,
-        query: searchQuery.value || undefined
       }
     });
     notifications.value = response.data.data;
-    totalRecords.value = response.data.count;
+    totalPages.value = response.data.count;
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -72,7 +69,6 @@ const fetchNotifications = async () => {
 
 watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
-  searchQuery.value = newQuery.query as string || '';
   fetchNotifications();
 }, { immediate: true });
 
@@ -80,19 +76,12 @@ const updateRouteParams = () => {
   router.push({
     query: {
       page: currentPage.value,
-      query: searchQuery.value || undefined
     }
   });
 };
 
-const onPageChange = (event: { page: number, rows: number }) => {
+const onPageChange = (event: { page: number }) => {
   currentPage.value = event.page + 1;
-  rowsPerPage.value = event.rows;
-  updateRouteParams();
-};
-
-const onSearch = () => {
-  currentPage.value = 1;
   updateRouteParams();
 };
 
@@ -111,7 +100,6 @@ const loadNotification = async (id: number) => {
       },
     });
     selectedNotification.value = response.data;
-    console.log('Selected Notification:', selectedNotification.value);
     showDetailDialog.value = true;
   } catch (error) {
     toast.add({
@@ -168,44 +156,34 @@ const getAvatarColor = (userId: number) => {
 
 <template>
   <MenuBar />
-  <div class="h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white p-4">
-    <div class="max-w-6xl mx-auto">
+  <div class="min-h-screen bg-gray-900 p-4 md:p-6 text-gray-100">
+    <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">Inbox</h1>
-        <Button icon="pi pi-refresh" class="p-button-text" @click="fetchNotifications" />
-      </div>
-
-      <!-- Search Bar -->
-      <div class="mb-6 flex items-center space-x-4">
-        <div class="relative flex-1">
-          <span class="p-input-icon-left w-full">
-            <i class="pi pi-search" />
-            <InputText v-model="searchQuery" placeholder="Search messages..." class="w-full" @keyup.enter="onSearch" />
-          </span>
-        </div>
-        <Button label="Search" icon="pi pi-search" @click="onSearch" class="p-button-outlined" />
+        <h1 class="text-2xl font-bold text-green-400">Inbox</h1>
+        <Button icon="pi pi-refresh" class="p-button-text text-gray-400 hover:text-green-400"
+          @click="fetchNotifications" />
       </div>
 
       <!-- Skeleton Loading -->
-      <div v-if="loading" class="space-y-2">
+      <div v-if="loading" class="space-y-3">
         <div v-for="(_, index) in skeletonItems" :key="index"
-          class="bg-slate-800/50 rounded-lg p-4 flex items-start space-x-4">
-          <Skeleton shape="circle" size="3rem"></Skeleton>
+          class="bg-gray-800 bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow-sm backdrop-blur-sm">
+          <Skeleton shape="circle" size="3rem" class="bg-gray-700"></Skeleton>
           <div class="flex-1">
             <div class="flex justify-between mb-2">
-              <Skeleton width="30%" height="1.2rem"></Skeleton>
-              <Skeleton width="20%" height="1rem"></Skeleton>
+              <Skeleton width="30%" height="1.2rem" class="bg-gray-700"></Skeleton>
+              <Skeleton width="20%" height="1rem" class="bg-gray-700"></Skeleton>
             </div>
-            <Skeleton width="90%" height="1rem" class="mb-2"></Skeleton>
-            <Skeleton width="75%" height="1rem"></Skeleton>
+            <Skeleton width="90%" height="1rem" class="mb-2 bg-gray-700"></Skeleton>
+            <Skeleton width="75%" height="1rem" class="bg-gray-700"></Skeleton>
           </div>
         </div>
       </div>
 
       <!-- Notifications List -->
-      <div v-else class="space-y-2">
+      <div v-else class="space-y-3">
         <div v-for="notification in notifications" :key="notification.id"
-          class="bg-slate-800/50 hover:bg-slate-700/50 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 cursor-pointer"
+          class="bg-gray-800 bg-opacity-80 hover:bg-gray-700 hover:bg-opacity-90 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 cursor-pointer shadow-sm border border-gray-700 backdrop-blur-sm"
           @click="loadNotification(notification.id)">
 
           <!-- Avatar -->
@@ -215,52 +193,60 @@ const getAvatarColor = (userId: number) => {
           <!-- Content -->
           <div class="flex-1 min-w-0">
             <div class="flex justify-between mb-1">
-              <div class="font-medium">{{ notification.from.name }}</div>
-              <div class="text-xs text-blue-200/70">{{ formatDate(notification.createdAt) }}</div>
+              <div class="font-medium text-gray-100">{{ notification.from.name }}</div>
+              <div class="text-xs text-gray-400">{{ formatDate(notification.createdAt) }}</div>
             </div>
-            <div class="text-xs text-blue-200/70 mb-1">{{ notification.from.username }}</div>
-            <div class="text-sm text-blue-100/90 truncate">{{ truncateMessage(notification.message) }}</div>
+            <div class="text-xs text-gray-400 mb-1">@{{ notification.from.username }}</div>
+            <div class="text-sm text-gray-300">{{ truncateMessage(notification.message) }}</div>
           </div>
         </div>
       </div>
 
       <!-- Empty State -->
-      <div v-if="!loading && notifications.length === 0" class="text-center py-12">
-        <i class="pi pi-inbox text-6xl text-blue-300/50 mb-4"></i>
-        <p class="text-lg text-blue-200/70">Your inbox is empty</p>
+      <div v-if="!loading && notifications.length === 0"
+        class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
+        <i class="pi pi-inbox text-6xl text-gray-600 mb-4"></i>
+        <p class="text-lg text-gray-400">Your inbox is empty</p>
+        <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
+          @click="fetchNotifications" />
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalRecords > 0" class="mt-6">
-        <Paginator :rows="rowsPerPage" :totalRecords="totalRecords" :first="(currentPage - 1) * rowsPerPage"
-          @page="onPageChange" :rowsPerPageOptions="[10, 20, 50]"
-          template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-          class="bg-slate-800/50 border border-slate-700 rounded-lg" />
+      <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+        <Paginator :rows="1" :totalRecords="totalPages" :first="currentPage - 1" @page="onPageChange"
+          :rowsPerPageOptions="[]" template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
+          class="bg-gray-800 bg-opacity-80 border border-gray-700 rounded-lg shadow-sm backdrop-blur-sm">
+          <template #start>
+            <span class="text-sm text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages }}</span>
+          </template>
+        </Paginator>
       </div>
 
       <!-- Notification Detail Dialog -->
       <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false"
-        class="bg-slate-800 text-white border border-slate-700 rounded-lg" :style="{ width: '90%', maxWidth: '600px' }">
-        <div v-if="selectedNotification" class="p-4">
+        class="bg-gray-800 bg-opacity-90 text-gray-100 border border-gray-700 rounded-lg shadow-lg backdrop-blur-sm"
+        :style="{ width: '90%', maxWidth: '600px' }">
+        <div v-if="selectedNotification" class="p-4 md:p-6">
           <div class="flex items-center space-x-3 mb-6">
             <Avatar :label="getInitials(selectedNotification.from.name)" class="flex-shrink-0" size="large"
               :style="{ backgroundColor: getAvatarColor(selectedNotification.from.id) }" />
             <div>
-              <h2 class="text-xl font-bold">{{ selectedNotification.from.name }}</h2>
-              <p class="text-sm text-blue-200/70">{{ selectedNotification.from.username }}</p>
+              <h2 class="text-xl font-bold text-green-400">{{ selectedNotification.from.name }}</h2>
+              <p class="text-sm text-gray-400">@{{ selectedNotification.from.username }}</p>
             </div>
           </div>
 
           <div class="flex justify-between items-center mb-4">
-            <p class="text-blue-200/90">{{ formatDate(selectedNotification.createdAt) }}</p>
+            <p class="text-gray-400">{{ formatDate(selectedNotification.createdAt) }}</p>
           </div>
 
-          <div class="border-t border-slate-700 pt-4 whitespace-pre-line">
+          <div class="border-t border-gray-700 pt-4 whitespace-pre-line text-gray-300">
             {{ selectedNotification.message }}
           </div>
 
           <div class="flex justify-end mt-6">
-            <Button label="Close" @click="closeDialog" class="p-button-outlined" />
+            <Button label="Close" @click="closeDialog"
+              class="p-button-outlined text-gray-300 hover:text-gray-100 border-gray-600 hover:border-gray-500" />
           </div>
         </div>
       </Dialog>
@@ -270,59 +256,65 @@ const getAvatarColor = (userId: number) => {
 
 <style scoped>
 :deep(.p-dialog-content) {
-  background-color: rgba(30, 41, 59, 0.95);
+  background-color: rgba(31, 41, 55, 0.9);
   border-radius: 0.5rem;
-  color: white;
+  color: #f3f4f6;
+  border: 1px solid rgba(55, 65, 81, 0.8);
 }
 
 :deep(.p-dialog) {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 :deep(.p-dialog-mask) {
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
 :deep(.p-paginator) {
-  background: transparent;
-  border: none;
+  background: rgba(31, 41, 55, 0.8);
+  border: 1px solid rgba(55, 65, 81, 0.8);
 }
 
 :deep(.p-paginator .p-paginator-page),
 :deep(.p-paginator .p-paginator-next),
 :deep(.p-paginator .p-paginator-last),
 :deep(.p-paginator .p-paginator-first),
-:deep(.p-paginator .p-paginator-prev),
-:deep(.p-paginator .p-dropdown) {
-  color: white;
+:deep(.p-paginator .p-paginator-prev) {
+  color: #9ca3af;
+  border: none;
+  background: transparent;
 }
 
 :deep(.p-paginator .p-paginator-page.p-highlight) {
-  background: rgba(59, 130, 246, 0.5);
+  background: #10b981;
+  color: white;
+}
+
+:deep(.p-paginator .p-paginator-page:not(.p-highlight):hover),
+:deep(.p-paginator .p-paginator-next:hover),
+:deep(.p-paginator .p-paginator-last:hover),
+:deep(.p-paginator .p-paginator-first:hover),
+:deep(.p-paginator .p-paginator-prev:hover) {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 :deep(.p-inputtext) {
-  background-color: rgba(30, 41, 59, 0.8);
-  border-color: rgba(100, 116, 139, 0.5);
-  color: white;
+  background-color: rgba(31, 41, 55, 0.8);
+  border-color: rgba(55, 65, 81, 0.8);
+  color: #f3f4f6;
 }
 
 :deep(.p-inputtext:focus) {
-  border-color: rgba(59, 130, 246, 0.8);
+  border-color: #10b981;
+  box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.2);
 }
 
-:deep(.p-dropdown-panel) {
-  background-color: rgba(30, 41, 59, 0.95);
-  border-color: rgba(100, 116, 139, 0.5);
-  color: white;
-}
-
-:deep(.p-dropdown-item) {
-  color: white;
-}
-
-:deep(.p-dropdown-item.p-highlight),
-:deep(.p-dropdown-item:hover) {
-  background-color: rgba(59, 130, 246, 0.3);
+:deep(.p-skeleton) {
+  background-color: rgba(55, 65, 81, 0.5);
+  background-image: linear-gradient(90deg,
+      rgba(55, 65, 81, 0.5) 0%,
+      rgba(75, 85, 99, 0.5) 50%,
+      rgba(55, 65, 81, 0.5) 100%);
 }
 </style>

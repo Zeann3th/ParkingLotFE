@@ -1,10 +1,10 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import ToastService from 'primevue/toastservice'
-import PrimeVue from 'primevue/config'
-import Aura from '@primeuix/themes/aura'
-import router from './router'
-import "./interceptors/axios"
+import { createApp } from 'vue';
+import App from './App.vue';
+import ToastService from 'primevue/toastservice';
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+import router from './router';
+import "./interceptors/axios";
 
 createApp(App)
   .use(PrimeVue, {
@@ -14,4 +14,4 @@ createApp(App)
   })
   .use(ToastService)
   .use(router)
-  .mount('#app')
+  .mount('#app');
