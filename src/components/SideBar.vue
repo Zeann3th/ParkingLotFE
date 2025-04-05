@@ -22,7 +22,7 @@ const { username, role } = useAuth();
       <div class="h-full flex flex-col">
         <div class="p-4 border-b border-gray-700">
           <RouterLink to="/"
-            class="text-2xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
+            class="text-2xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent pl-2">
             The Parking<span class="text-white">Hub</span>
           </RouterLink>
         </div>
