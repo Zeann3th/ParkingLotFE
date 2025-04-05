@@ -20,6 +20,10 @@ const passwordError = ref('');
 const showPassword = ref(false);
 const showRetypePassword = ref(false);
 
+const showPopUp = ref(false);
+const verificationCode = ref('');
+const isResending = ref(false);
+
 const passwordsMatch = computed(() => {
   return password.value === retypePassword.value;
 });
@@ -56,13 +60,10 @@ const handleSubmit = async (event: Event) => {
       toast.add({
         severity: 'success',
         summary: 'Registration Successful',
-        detail: 'Redirecting to sign in',
+        detail: 'Please check your email for verification code',
         life: 3000
       });
-
-      setTimeout(() => {
-        router.push('/sign-in');
-      }, 1000);
+      showPopUp.value = true;
     } else {
       toast.add({
         severity: 'error',
@@ -82,12 +83,95 @@ const handleSubmit = async (event: Event) => {
     isSubmitted.value = false;
   }
 }
+
+const handleVerifyEmail = async (event: Event) => {
+  event.preventDefault();
+
+  if (!verificationCode.value) {
+    toast.add({
+      severity: 'error',
+      summary: 'Verification Failed',
+      detail: 'Please enter your verification code',
+      life: 3000
+    });
+    return;
+  }
+
+  isSubmitted.value = true;
+
+  try {
+    const { status, data: { message } } = await axios.post('auth/verify-email', {
+      email: email.value,
+      pin: verificationCode.value
+    });
+
+    if (status >= 200 && status < 300) {
+      toast.add({
+        severity: 'success',
+        summary: 'Verification Successful',
+        detail: 'Your email has been verified successfully',
+        life: 3000
+      });
+      router.push('/sign-in');
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Verification Failed',
+        detail: message || 'Verification failed',
+        life: 3000
+      });
+      verificationCode.value = '';
+    }
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'An error occurred',
+      life: 3000
+    });
+    verificationCode.value = '';
+  } finally {
+    isSubmitted.value = false;
+  }
+};
+
+const resendVerificationCode = async () => {
+  isResending.value = true;
+  try {
+    const { status, data } = await axios.post('auth/resend-email', {
+      email: email.value,
+      action: "verify"
+    });
+
+    if (status >= 200 && status < 300) {
+      verificationCode.value = '';
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Resend Failed',
+        detail: data.message || 'Failed to resend verification code',
+        life: 3000
+      });
+    }
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'An error occurred while resending the code',
+      life: 3000
+    });
+  } finally {
+    isResending.value = false;
+  }
+};
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-900 flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-md">
-      <div class="bg-gray-800 bg-opacity-80 shadow-xl rounded-xl border border-gray-700 p-8 space-y-6 backdrop-blur-sm">
+      <!-- Registration Form -->
+      <div v-if="!showPopUp"
+        class="bg-gray-800 bg-opacity-80 shadow-xl rounded-xl border border-gray-700 p-8 space-y-6 backdrop-blur-sm">
         <div class="text-center">
           <h1 class="text-3xl font-bold text-green-400 mb-2">Create account</h1>
           <p class="text-sm text-gray-400">Sign up for a new account</p>
@@ -95,6 +179,7 @@ const handleSubmit = async (event: Event) => {
 
         <form @submit="handleSubmit" class="space-y-6">
           <div class="space-y-4">
+            <!-- Username Field -->
             <div>
               <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
                 Username
@@ -105,6 +190,7 @@ const handleSubmit = async (event: Event) => {
                 required />
             </div>
 
+            <!-- Name Field -->
             <div>
               <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
                 Name
@@ -115,6 +201,7 @@ const handleSubmit = async (event: Event) => {
                 required />
             </div>
 
+            <!-- Email Field -->
             <div>
               <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
                 Email
@@ -125,6 +212,7 @@ const handleSubmit = async (event: Event) => {
                 required />
             </div>
 
+            <!-- Password Field -->
             <div>
               <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
                 Password
@@ -153,6 +241,7 @@ const handleSubmit = async (event: Event) => {
               </div>
             </div>
 
+            <!-- Confirm Password Field -->
             <div>
               <label for="retypePassword" class="block text-sm font-medium text-gray-300 mb-2">
                 Confirm Password
@@ -206,12 +295,45 @@ const handleSubmit = async (event: Event) => {
           </p>
         </div>
       </div>
+
+      <!-- Verification Popup -->
+      <div v-else
+        class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 p-8 max-w-md w-full">
+          <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-green-400 mb-2">Verify Your Email</h2>
+            <p class="text-gray-400">We've sent a verification code to <span class="text-white">{{ email }}</span></p>
+          </div>
+
+          <form @submit.prevent="handleVerifyEmail" class="space-y-6">
+            <div class="flex flex-col items-center">
+              <InputText v-model="verificationCode" type="text" inputmode="text" pattern="[0-9a-zA-Z]*" maxlength="8"
+                placeholder="Enter verification code"
+                class="w-full py-3 px-4 text-center text-lg bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                autocomplete="one-time-code" autofocus />
+              <p class="text-xs text-gray-400 mt-2">You can paste the code or type it</p>
+            </div>
+
+            <Button type="submit"
+              class="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition duration-200"
+              :disabled="!verificationCode || isSubmitted" :loading="isSubmitted">
+              {{ isSubmitted ? "Verifying..." : "Verify Email" }}
+            </Button>
+          </form>
+
+          <div class="mt-4 text-center text-sm text-gray-400">
+            Didn't receive a code?
+            <button @click="resendVerificationCode" class="text-green-400 hover:text-green-300" :disabled="isResending">
+              {{ isResending ? "Sending..." : "Resend Code" }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Optional: Add subtle glow effect on focus */
 .input-text:focus {
   box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
 }

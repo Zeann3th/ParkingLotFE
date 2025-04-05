@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import MenuBar from '@/components/MenuBar.vue';
+import MenuLayout from '@/components/MenuLayout.vue';
 </script>
 
 <template>
-  <MenuBar />
-  <h1>Dashboard</h1>
+  <MenuLayout>
+    <h1>Dashboard</h1>
+  </MenuLayout>
 </template>

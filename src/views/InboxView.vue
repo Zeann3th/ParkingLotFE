@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
-import MenuBar from '@/components/MenuBar.vue';
 import Dialog from 'primevue/dialog';
 import Avatar from 'primevue/avatar';
 import Skeleton from 'primevue/skeleton';
@@ -10,6 +9,7 @@ import Paginator from 'primevue/paginator';
 import { memoryStorage } from '@/storage';
 import { useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
+import MenuLayout from '@/components/MenuLayout.vue';
 
 interface Notification {
   id: number;
@@ -155,103 +155,104 @@ const getAvatarColor = (userId: number) => {
 </script>
 
 <template>
-  <MenuBar />
-  <div class="min-h-screen bg-gray-900 p-4 md:p-6 text-gray-100">
-    <div class="max-w-4xl mx-auto">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-green-400">Inbox</h1>
-        <Button icon="pi pi-refresh" class="p-button-text text-gray-400 hover:text-green-400"
-          @click="fetchNotifications" />
-      </div>
-
-      <!-- Skeleton Loading -->
-      <div v-if="loading" class="space-y-3">
-        <div v-for="(_, index) in skeletonItems" :key="index"
-          class="bg-gray-800 bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow-sm backdrop-blur-sm">
-          <Skeleton shape="circle" size="3rem" class="bg-gray-700"></Skeleton>
-          <div class="flex-1">
-            <div class="flex justify-between mb-2">
-              <Skeleton width="30%" height="1.2rem" class="bg-gray-700"></Skeleton>
-              <Skeleton width="20%" height="1rem" class="bg-gray-700"></Skeleton>
-            </div>
-            <Skeleton width="90%" height="1rem" class="mb-2 bg-gray-700"></Skeleton>
-            <Skeleton width="75%" height="1rem" class="bg-gray-700"></Skeleton>
-          </div>
+  <MenuLayout>
+    <div class="min-h-screen bg-gray-900 p-4 md:p-6 text-gray-100">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-bold text-green-400">Inbox</h1>
+          <Button icon="pi pi-refresh" class="p-button-text text-gray-400 hover:text-green-400"
+            @click="fetchNotifications" />
         </div>
-      </div>
 
-      <!-- Notifications List -->
-      <div v-else class="space-y-3">
-        <div v-for="notification in notifications" :key="notification.id"
-          class="bg-gray-800 bg-opacity-80 hover:bg-gray-700 hover:bg-opacity-90 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 cursor-pointer shadow-sm border border-gray-700 backdrop-blur-sm"
-          @click="loadNotification(notification.id)">
-
-          <!-- Avatar -->
-          <Avatar :label="getInitials(notification.from.name)" class="flex-shrink-0"
-            :style="{ backgroundColor: getAvatarColor(notification.from.id) }" />
-
-          <!-- Content -->
-          <div class="flex-1 min-w-0">
-            <div class="flex justify-between mb-1">
-              <div class="font-medium text-gray-100">{{ notification.from.name }}</div>
-              <div class="text-xs text-gray-400">{{ formatDate(notification.createdAt) }}</div>
-            </div>
-            <div class="text-xs text-gray-400 mb-1">@{{ notification.from.username }}</div>
-            <div class="text-sm text-gray-300">{{ truncateMessage(notification.message) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-if="!loading && notifications.length === 0"
-        class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
-        <i class="pi pi-inbox text-6xl text-gray-600 mb-4"></i>
-        <p class="text-lg text-gray-400">Your inbox is empty</p>
-        <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
-          @click="fetchNotifications" />
-      </div>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="mt-6 flex justify-center">
-        <Paginator :rows="1" :totalRecords="totalPages" :first="currentPage - 1" @page="onPageChange"
-          :rowsPerPageOptions="[]" template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
-          class="bg-gray-800 bg-opacity-80 border border-gray-700 rounded-lg shadow-sm backdrop-blur-sm">
-          <template #start>
-            <span class="text-sm text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages }}</span>
-          </template>
-        </Paginator>
-      </div>
-
-      <!-- Notification Detail Dialog -->
-      <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false"
-        class="bg-gray-800 bg-opacity-90 text-gray-100 border border-gray-700 rounded-lg shadow-lg backdrop-blur-sm"
-        :style="{ width: '90%', maxWidth: '600px' }">
-        <div v-if="selectedNotification" class="p-4 md:p-6">
-          <div class="flex items-center space-x-3 mb-6">
-            <Avatar :label="getInitials(selectedNotification.from.name)" class="flex-shrink-0" size="large"
-              :style="{ backgroundColor: getAvatarColor(selectedNotification.from.id) }" />
-            <div>
-              <h2 class="text-xl font-bold text-green-400">{{ selectedNotification.from.name }}</h2>
-              <p class="text-sm text-gray-400">@{{ selectedNotification.from.username }}</p>
+        <!-- Skeleton Loading -->
+        <div v-if="loading" class="space-y-3">
+          <div v-for="(_, index) in skeletonItems" :key="index"
+            class="bg-gray-800 bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow-sm backdrop-blur-sm">
+            <Skeleton shape="circle" size="3rem" class="bg-gray-700"></Skeleton>
+            <div class="flex-1">
+              <div class="flex justify-between mb-2">
+                <Skeleton width="30%" height="1.2rem" class="bg-gray-700"></Skeleton>
+                <Skeleton width="20%" height="1rem" class="bg-gray-700"></Skeleton>
+              </div>
+              <Skeleton width="90%" height="1rem" class="mb-2 bg-gray-700"></Skeleton>
+              <Skeleton width="75%" height="1rem" class="bg-gray-700"></Skeleton>
             </div>
           </div>
+        </div>
 
-          <div class="flex justify-between items-center mb-4">
-            <p class="text-gray-400">{{ formatDate(selectedNotification.createdAt) }}</p>
-          </div>
+        <!-- Notifications List -->
+        <div v-else class="space-y-3">
+          <div v-for="notification in notifications" :key="notification.id"
+            class="bg-gray-800 bg-opacity-80 hover:bg-gray-700 hover:bg-opacity-90 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 cursor-pointer shadow-sm border border-gray-700 backdrop-blur-sm"
+            @click="loadNotification(notification.id)">
 
-          <div class="border-t border-gray-700 pt-4 whitespace-pre-line text-gray-300">
-            {{ selectedNotification.message }}
-          </div>
+            <!-- Avatar -->
+            <Avatar :label="getInitials(notification.from.name)" class="flex-shrink-0"
+              :style="{ backgroundColor: getAvatarColor(notification.from.id) }" />
 
-          <div class="flex justify-end mt-6">
-            <Button label="Close" @click="closeDialog"
-              class="p-button-outlined text-gray-300 hover:text-gray-100 border-gray-600 hover:border-gray-500" />
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between mb-1">
+                <div class="font-medium text-gray-100">{{ notification.from.name }}</div>
+                <div class="text-xs text-gray-400">{{ formatDate(notification.createdAt) }}</div>
+              </div>
+              <div class="text-xs text-gray-400 mb-1">@{{ notification.from.username }}</div>
+              <div class="text-sm text-gray-300">{{ truncateMessage(notification.message) }}</div>
+            </div>
           </div>
         </div>
-      </Dialog>
+
+        <!-- Empty State -->
+        <div v-if="!loading && notifications.length === 0"
+          class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
+          <i class="pi pi-inbox text-6xl text-gray-600 mb-4"></i>
+          <p class="text-lg text-gray-400">Your inbox is empty</p>
+          <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
+            @click="fetchNotifications" />
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+          <Paginator :rows="1" :totalRecords="totalPages" :first="currentPage - 1" @page="onPageChange"
+            :rowsPerPageOptions="[]" template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
+            class="bg-gray-800 bg-opacity-80 border border-gray-700 rounded-lg shadow-sm backdrop-blur-sm">
+            <template #start>
+              <span class="text-sm text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages }}</span>
+            </template>
+          </Paginator>
+        </div>
+
+        <!-- Notification Detail Dialog -->
+        <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false"
+          class="bg-gray-800 bg-opacity-90 text-gray-100 border border-gray-700 rounded-lg shadow-lg backdrop-blur-sm"
+          :style="{ width: '90%', maxWidth: '600px' }">
+          <div v-if="selectedNotification" class="p-4 md:p-6">
+            <div class="flex items-center space-x-3 mb-6">
+              <Avatar :label="getInitials(selectedNotification.from.name)" class="flex-shrink-0" size="large"
+                :style="{ backgroundColor: getAvatarColor(selectedNotification.from.id) }" />
+              <div>
+                <h2 class="text-xl font-bold text-green-400">{{ selectedNotification.from.name }}</h2>
+                <p class="text-sm text-gray-400">@{{ selectedNotification.from.username }}</p>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-gray-400">{{ formatDate(selectedNotification.createdAt) }}</p>
+            </div>
+
+            <div class="border-t border-gray-700 pt-4 whitespace-pre-line text-gray-300">
+              {{ selectedNotification.message }}
+            </div>
+
+            <div class="flex justify-end mt-6">
+              <Button label="Close" @click="closeDialog"
+                class="p-button-outlined text-gray-300 hover:text-gray-100 border-gray-600 hover:border-gray-500" />
+            </div>
+          </div>
+        </Dialog>
+      </div>
     </div>
-  </div>
+  </MenuLayout>
 </template>
 
 <style scoped>

@@ -29,17 +29,8 @@ const handleSubmit = async (event: Event) => {
     if (status >= 200 && status < 300) {
       memoryStorage.setToken(access_token);
 
-      toast.add({
-        severity: 'success',
-        summary: 'Login Successful',
-        detail: 'Redirecting to dashboard',
-        life: 3000
-      });
-
-      setTimeout(() => {
-        const redirectPath = route.query.redirect || '/dashboard';
-        router.push(redirectPath as string);
-      }, 1000);
+      const redirectPath = route.query.redirect || '/dashboard';
+      router.push(redirectPath as string);
     } else {
       toast.add({
         severity: 'error',
