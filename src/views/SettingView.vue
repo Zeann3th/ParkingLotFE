@@ -123,7 +123,7 @@ const handlePasswordReset = async () => {
 
   isSubmitting.value = true;
   try {
-    await axios.post('/reset-password', {
+    await axios.post('auth/reset-password', {
       email: email.value,
       pin: pin.value,
       password: form.value.newPassword
