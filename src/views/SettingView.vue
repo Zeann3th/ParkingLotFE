@@ -25,7 +25,7 @@ const isVerifying = ref(false);
 const requestPasswordResetDirectly = async () => {
   try {
     isSubmitting.value = true;
-    await axios.post('/forgot-password', { email: email.value });
+    await axios.post('auth/forgot-password', { email: email.value });
     showVerificationPopup.value = true;
     toast.add({
       severity: 'success',
@@ -61,7 +61,10 @@ const requestPasswordReset = () => {
 const resendVerificationCode = async () => {
   isResending.value = true;
   try {
-    await axios.post('/forgot-password', { email: email.value });
+    await axios.post('auth/resend-email', {
+      email: email.value,
+      action: "reset"
+    });
     toast.add({
       severity: 'success',
       summary: 'Email Resent',
