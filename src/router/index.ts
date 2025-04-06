@@ -1,17 +1,17 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { memoryStorage } from "@/storage";
+import axios from "axios";
+import { useAuth } from "@/composables/auth";
 import HomeView from "../views/HomeView.vue";
 import SignInView from "../views/auth/SignInView.vue";
 import SignUpView from "../views/auth/SignUpView.vue";
-import { memoryStorage } from "@/storage";
 import InboxView from "@/views/InboxView.vue";
 import TicketView from "@/views/TicketView.vue";
-import axios from "axios";
-import SettingView from "@/views/SettingView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import DashBoardView from "@/views/DashBoardView.vue";
 import ParkingView from "@/views/ParkingView.vue";
 import TransactionView from "@/views/TransactionView.vue";
-import { useAuth } from "@/composables/auth";
+import SettingView from "@/views/SettingView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
