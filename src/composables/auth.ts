@@ -1,4 +1,3 @@
-
 import { ref, computed } from "vue";
 import { jwtDecode } from "jwt-decode";
 import { memoryStorage } from "@/storage";
@@ -9,7 +8,7 @@ export function useAuth() {
   const decodedToken = computed(() => {
     if (!token.value) return null;
     try {
-      return jwtDecode(token.value) as { role: string; username: string; email: string };
+      return jwtDecode(token.value) as { role: string; username: string; email: string; };
     } catch (e) {
       return null;
     }

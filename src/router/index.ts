@@ -10,6 +10,8 @@ import SettingView from "@/views/SettingView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import DashBoardView from "@/views/DashBoardView.vue";
 import ParkingView from "@/views/ParkingView.vue";
+import TransactionView from "@/views/TransactionView.vue";
+import { useAuth } from "@/composables/auth";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -18,109 +20,101 @@ const router = createRouter({
       path: "/",
       component: HomeView,
       name: "home",
-      meta: {
-        title: "The Parking Hub",
-      }
-    },
-    {
-      path: "/dashboard",
-      component: DashBoardView,
-      name: "dashboard",
-      meta: {
-        title: "Dashboard",
-        requiresAuth: true
-      }
+      meta: { title: "The Parking Hub", }
     },
     {
       path: "/sign-in",
       component: SignInView,
       name: "auth.sign-in",
-      meta: {
-        title: "Sign In",
-      }
+      meta: { title: "Sign In" }
     },
     {
       path: "/sign-up",
       component: SignUpView,
       name: "auth.sign-up",
-      meta: {
-        title: "Sign Up",
-      }
+      meta: { title: "Sign Up" }
+    },
+    {
+      path: "/dashboard",
+      component: DashBoardView,
+      name: "dashboard",
+      meta: { title: "Dashboard", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
     },
     {
       path: "/parking",
       component: ParkingView,
       name: "parking",
-      meta: {
-        title: "Parking",
-        requiresAuth: true
-      }
+      meta: { title: "Parking", requiresAuth: true, allows: ["ADMIN", "SECURITY"] }
     },
     {
       path: "/inbox",
       component: InboxView,
       name: "inbox",
-      meta: {
-        title: "Inbox",
-        requiresAuth: true
-      }
+      meta: { title: "Inbox", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
     },
     {
       path: "/tickets",
       component: TicketView,
       name: "tickets",
-      meta: {
-        title: "Tickets",
-        requiresAuth: true
-      }
+      meta: { title: "Tickets", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
+    },
+    {
+      path: "/transactions",
+      component: TransactionView,
+      name: "transactions",
+      meta: { title: "Transactions", requiresAuth: true, allows: ["ADMIN", "USER"] }
     },
     {
       path: "/settings",
       component: SettingView,
       name: "settings",
-      meta: {
-        title: "Settings",
-        requiresAuth: true
-      },
+      meta: { title: "Settings", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] },
     },
     {
       path: "/:pathMatch(.*)*",
       component: NotFoundView,
       name: "not-found",
-      meta: {
-        title: "Not Found",
-      }
+      meta: { title: "Not Found" }
     }
   ]
 });
 
 router.beforeEach(async (to, _, next) => {
-  if (!to.meta.requiresAuth) {
-    document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
+  document.title = to.meta.title || "The Parking Hub";
+
+  if (!to.meta?.requiresAuth) {
     return next();
   }
 
   const token = memoryStorage.getToken();
-  if (token) {
-    document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
-    return next();
+  let isAuthenticated = !!token;
+
+  if (!token) {
+    try {
+      const response = await axios.get("/auth/refresh");
+      if (response.status === 200 && response.data.access_token) {
+        memoryStorage.setToken(response.data.access_token);
+        isAuthenticated = true;
+      }
+    } catch (error) {
+      console.error('Auth refresh failed:', error);
+      return next({ name: "auth.sign-in", query: { redirect: to.fullPath } });
+    }
   }
 
-  try {
-    const response = await axios.get("/auth/refresh");
-
-    if (response.status === 200 && response.data.access_token) {
-      memoryStorage.setToken(response.data.access_token);
-      document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
-      return next();
-    } else {
-      throw new Error('Invalid refresh response');
-    }
-  } catch (error) {
-    console.error('Auth refresh failed:', error);
-    document.title = to.meta.title ? String(to.meta.title) : "The Parking Hub";
+  if (!isAuthenticated) {
     return next({ name: "auth.sign-in", query: { redirect: to.fullPath } });
   }
+
+  if (to.meta.allows) {
+    const { role } = useAuth();
+
+    if (!role || !to.meta.allows.includes(role.value as "ADMIN" | "SECURITY" | "USER")) {
+      return next({ name: "dashboard" });
+    }
+  }
+
+  next();
 });
 
 export default router;
