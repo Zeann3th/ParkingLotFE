@@ -12,6 +12,7 @@ const { role, username } = useAuth();
 const items = ref<MenuItem[]>([
   { label: "Dashboard", icon: "pi pi-fw pi-chart-bar", url: "/dashboard" },
   { label: "Tickets", icon: "pi pi-fw pi-ticket", url: "/tickets" },
+  { label: "Residences", icon: "pi pi-fw pi-home", url: "/residences" },
 ]);
 
 if (role.value === "ADMIN" || role.value === "SECURITY") {

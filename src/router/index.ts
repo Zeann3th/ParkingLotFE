@@ -12,6 +12,7 @@ import DashBoardView from "@/views/DashBoardView.vue";
 import ParkingView from "@/views/ParkingView.vue";
 import TransactionView from "@/views/TransactionView.vue";
 import SettingView from "@/views/SettingView.vue";
+import ResidenceView from "@/views/ResidenceView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -57,6 +58,12 @@ const router = createRouter({
       component: TicketView,
       name: "tickets",
       meta: { title: "Tickets", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
+    },
+    {
+      path: "/residences",
+      component: ResidenceView,
+      name: "residences",
+      meta: { title: "Residences", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
     },
     {
       path: "/transactions",
