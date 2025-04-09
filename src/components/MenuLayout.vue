@@ -27,10 +27,6 @@ if (role.value === "ADMIN" || role.value === "USER") {
   items.value.push({ label: "Transactions", icon: "pi pi-fw pi-receipt", url: "/transactions" });
 }
 
-if (role.value === "ADMIN") {
-  items.value.push({ label: "Users", icon: "pi pi-fw pi-user-edit", url: "/users" });
-}
-
 const userProfile: MenuItem[] = [
   { label: username.value, icon: "pi pi-fw pi-user", url: "#" },
   { separator: true },

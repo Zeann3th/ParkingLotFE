@@ -125,14 +125,6 @@ const handleSignIn = async () => {
         class="text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent mb-6">
         Smart Parking Solutions
       </h1>
-      <div class="flex justify-center gap-4 mt-8">
-        <RouterLink to="/sign-up">
-          <Button label="Get Started"
-            class="rounded-lg px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-none shadow-lg" />
-        </RouterLink>
-        <Button label="Learn More"
-          class="rounded-lg px-8 py-4 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white" />
-      </div>
     </header>
 
     <!-- Features Carousel -->
@@ -163,10 +155,10 @@ const handleSignIn = async () => {
           </p>
         </div>
 
-        <DataTable :value="sortedPricing" :loading="loading" class="border-none">
+        <DataTable :value="sortedPricing" :loading="loading" class="border-none" :row-hover="false">
           <Column field="type" header="Plan Type">
             <template #body="{ data }">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center font-bold gap-3">
                 <span class="px-3 py-1 rounded-full text-sm font-medium" :class="{
                   'bg-green-500/20 text-green-400': data.type === 'DAILY',
                   'bg-cyan-500/20 text-cyan-400': data.type === 'MONTHLY',
@@ -183,7 +175,7 @@ const handleSignIn = async () => {
                 <span class="text-2xl">
                   {{ data.vehicleType === 'MOTORBIKE' ? '🛵' : '🚗' }}
                 </span>
-                <span class="capitalize text-gray-300">
+                <span class="capitalize text-white font-bold">
                   {{ data.vehicleType.toLowerCase() }}
                 </span>
               </div>
@@ -191,38 +183,12 @@ const handleSignIn = async () => {
           </Column>
           <Column field="price" header="Price">
             <template #body="{ data }">
-              <span class="font-bold text-xl bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
+              <span class="font-bold text-xl text-white">
                 {{ new Intl.NumberFormat('en-US').format(data.price) + " VND" }}
               </span>
             </template>
           </Column>
-          <Column header="Features">
-            <template #body="{ data }">
-              <ul class="list-disc list-inside text-gray-400 space-y-1">
-                <li v-for="(feature, idx) in data.features" :key="idx">{{ feature }}</li>
-              </ul>
-            </template>
-          </Column>
-          <Column header="Action">
-            <template #body>
-              <Button label="Choose"
-                class="rounded-lg px-4 py-2 bg-green-600 hover:bg-green-700 text-white border-none" />
-            </template>
-          </Column>
         </DataTable>
-      </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="relative z-10 max-w-4xl mx-auto px-4 mb-24 text-center">
-      <div
-        class="bg-gradient-to-r from-green-600/20 to-cyan-600/20 rounded-xl border border-green-500/30 p-12 backdrop-blur-lg">
-        <h2 class="text-3xl font-bold text-white mb-4">Ready to Park Smarter?</h2>
-        <p class="text-xl text-gray-300 mb-8">Join thousands of happy customers enjoying stress-free parking</p>
-        <RouterLink to="/sign-up">
-          <Button label="Get Started Now"
-            class="rounded-lg px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-none shadow-lg text-lg" />
-        </RouterLink>
       </div>
     </section>
 
@@ -243,22 +209,6 @@ const handleSignIn = async () => {
 </template>
 
 <style>
-.p-datatable .p-datatable-thead>tr>th {
-  background: rgba(31, 41, 55, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
-  color: #a1a1aa !important;
-  font-weight: 600 !important;
-}
-
-.p-datatable .p-datatable-tbody>tr>td {
-  border-color: rgba(255, 255, 255, 0.05) !important;
-  background: rgba(31, 41, 55, 0.5) !important;
-}
-
-.p-datatable .p-datatable-tbody>tr:hover>td {
-  background: rgba(255, 255, 255, 0.03) !important;
-}
-
 .p-button {
   transition: all 0.3s ease !important;
 }
