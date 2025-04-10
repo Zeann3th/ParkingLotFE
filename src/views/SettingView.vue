@@ -384,7 +384,6 @@ html.dark :deep(.p-confirm-popup) {
   color: var(--text-color) !important;
 }
 
-/* Fade-in Animation for the Form */
 @keyframes fade-in {
   from {
     opacity: 0;

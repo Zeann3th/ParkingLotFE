@@ -10,20 +10,7 @@ import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-
-interface Ticket {
-  id: number;
-  title: string;
-  type: "DAILY" | "MONTHLY" | "RESERVED";
-  status: "AVAILABLE" | "INUSE" | "LOST";
-  vehicleId?: number;
-  userId?: number;
-}
-
-interface Response {
-  count: number;
-  data: Ticket[];
-}
+import type { Ticket, TicketResponse } from '@/types';
 
 const { role } = useAuth();
 const tickets: Ref<Ticket[]> = ref([]);
@@ -42,7 +29,7 @@ const rowsPerPage = ref(10);
 const fetchTickets = async () => {
   loading.value = true;
   try {
-    const response = await axios.get<Response>(
+    const response = await axios.get<TicketResponse>(
       '/tickets',
       {
         headers: {

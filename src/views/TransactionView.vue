@@ -10,20 +10,7 @@ import { memoryStorage } from '@/storage';
 import { useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-
-interface Transaction {
-  id: number;
-  userId: number;
-  amount: number;
-  status: "PENDING" | "PAID";
-  month: number;
-  year: number;
-}
-
-interface Response {
-  count: number;
-  data: Transaction[];
-}
+import type { Transaction, TransactionResponse } from '@/types';
 
 const transactions = ref<Transaction[]>([]);
 const selectedTransaction = ref<Transaction | null>(null);
@@ -43,7 +30,7 @@ const rowsPerPage = ref(10);
 const fetchTransactions = async () => {
   loading.value = true;
   try {
-    const response = await axios.get<Response>('/transactions', {
+    const response = await axios.get<TransactionResponse>('/transactions', {
       headers: {
         Authorization: `Bearer ${memoryStorage.getToken()}`,
       },

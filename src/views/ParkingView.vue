@@ -4,22 +4,9 @@ import { useToast } from 'primevue';
 import { ref } from 'vue';
 import { memoryStorage } from '@/storage';
 import MenuLayout from '@/components/MenuLayout.vue';
-// Using standard input/button as requested
+import type { CheckIn, CheckOut } from '@/types';
 
 const toast = useToast();
-
-type CheckIn = {
-  sectionId: number | string;
-  ticketId: number | string;
-  plate: string;
-  type: string;
-};
-
-type CheckOut = {
-  sectionId: number | string;
-  ticketId: number | string;
-  plate: string;
-};
 
 const checkIn = ref<CheckIn>({ sectionId: '', ticketId: '', plate: '', type: '' });
 const checkOut = ref<CheckOut>({ sectionId: '', ticketId: '', plate: '' });

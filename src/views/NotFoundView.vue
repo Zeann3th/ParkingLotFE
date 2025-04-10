@@ -1,12 +1,6 @@
 <script setup lang="ts">
+import router from '@/router';
 import Button from 'primevue/button';
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-const goHome = () => {
-  router.push('/dashboard');
-};
 </script>
 
 <template>
@@ -16,7 +10,7 @@ const goHome = () => {
       <h1 class="text-6xl sm:text-7xl md:text-8xl font-bold text-green-600 dark:text-green-500 mb-4">404</h1>
       <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-8">Oops! The page you're looking for doesn't
         exist.</p>
-      <Button @click="goHome" label="Go Home" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium
+      <Button @click="() => router.push('/dashboard')" label="Go Home" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium
                hover:bg-green-700
                focus:outline-none focus:ring-2 focus:ring-offset-2
                focus:ring-green-500 dark:focus:ring-offset-gray-900

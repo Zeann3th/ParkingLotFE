@@ -10,36 +10,7 @@ import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-
-type Residence = {
-  id: number;
-  building: string;
-  room: number;
-}
-
-type Vehicle = {
-  id: number;
-  plate: string;
-  type: string;
-}
-
-type Resident = {
-  id: number;
-  name: string;
-}
-
-type ResidenceDetail = {
-  id: number;
-  building: string;
-  room: number;
-  vehicles: Vehicle[];
-  residents: Resident[];
-}
-
-interface Response {
-  count: number;
-  data: Residence[];
-}
+import type { Residence, ResidenceDetail, ResidenceResponse } from '@/types';
 
 const { role } = useAuth();
 const residences: Ref<Residence[]> = ref([]);
@@ -53,12 +24,12 @@ const router = useRouter();
 
 const totalPages = ref(1);
 const currentPage = ref(1);
-const rowsPerPage = ref(12);
+const rowsPerPage = ref(10);
 
 const fetchResidences = async () => {
   loading.value = true;
   try {
-    const response = await axios.get<Response>(
+    const response = await axios.get<ResidenceResponse>(
       '/residences',
       {
         headers: {

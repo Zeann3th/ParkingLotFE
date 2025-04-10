@@ -8,12 +8,7 @@ import { useToast } from 'primevue/usetoast';
 import { memoryStorage } from '@/storage';
 import router from '@/router';
 import { RouterLink } from 'vue-router';
-
-interface Pricing {
-  type: 'DAILY' | 'MONTHLY' | 'RESERVED';
-  vehicleType: 'MOTORBIKE' | 'CAR';
-  price: number;
-}
+import type { Pricing } from '@/types';
 
 const toast = useToast();
 const pricing = ref<Pricing[]>([]);
