@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
-import axios from 'axios';
-import { memoryStorage } from '@/storage';
-import Skeleton from 'primevue/skeleton';
-import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
-import Paginator from 'primevue/paginator';
-import { useToast } from 'primevue';
+import { Skeleton, Dialog, Button, Paginator, useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-import type { Ticket, TicketResponse } from '@/types';
+import type { Ticket } from '@/types';
+import { ticketService } from '@/services/ticket.service';
 
 const { role } = useAuth();
 const tickets: Ref<Ticket[]> = ref([]);
 const selectedTicket = ref<Ticket | null>(null);
-const loading = ref(true);
+const isLoading = ref(true);
+const isMutated = ref(false);
 const detailsLoading = ref(false);
 const showDetailDialog = ref<boolean>(false);
 const toast = useToast();
@@ -26,39 +22,22 @@ const totalPages = ref(1);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
 
-const fetchTickets = async () => {
-  loading.value = true;
+const getAllTickets = async () => {
+  isLoading.value = true;
   try {
-    const response = await axios.get<TicketResponse>(
-      '/tickets',
-      {
-        headers: {
-          Authorization: `Bearer ${memoryStorage.getToken()}`,
-        },
-        params: {
-          page: currentPage.value,
-          limit: rowsPerPage.value,
-        }
-      }
-    );
-    tickets.value = response.data.data;
-    totalPages.value = Math.ceil(response.data.count / rowsPerPage.value);
+    const response = await ticketService.getAll(currentPage.value, rowsPerPage.value, { cache: isMutated.value });
+    tickets.value = response.data;
+    totalPages.value = response.count;
   } catch (error) {
-    console.error('Error fetching tickets:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load tickets',
-      life: 3000,
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load tickets', life: 3000, });
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 
 watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
-  fetchTickets();
+  getAllTickets();
 }, { immediate: true });
 
 const updateRouteParams = () => {
@@ -74,25 +53,15 @@ const onPageChange = (event: { page: number }) => {
   updateRouteParams();
 };
 
-const fetchTicketDetails = async (id: number) => {
+const getTicketDetail = async (id: number) => {
   detailsLoading.value = true;
   showDetailDialog.value = true;
 
   try {
-    const response = await axios.get<Ticket>(`/tickets/${id}`, {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      },
-    });
-    selectedTicket.value = response.data;
+    const response = await ticketService.getById(id);
+    selectedTicket.value = response;
   } catch (error) {
-    console.error('Error fetching ticket details:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load ticket details',
-      life: 3000,
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load ticket details', life: 3000, });
     showDetailDialog.value = false;
   } finally {
     detailsLoading.value = false;
@@ -156,11 +125,11 @@ const getTypeLabel = (type: string) => {
           <h1 class="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">Tickets</h1>
           <Button icon="pi pi-refresh"
             class="p-button-text text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400"
-            @click="fetchTickets" aria-label="Refresh Tickets" />
+            @click="getAllTickets" aria-label="Refresh Tickets" />
         </div>
 
         <!-- Skeleton Loading -->
-        <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <div v-for="n in 8" :key="`skel-${n}`" class="card-themed-skeleton p-4">
             <Skeleton width="60%" height="1.5rem" class="mb-2" />
             <div class="flex justify-between">
@@ -175,8 +144,7 @@ const getTypeLabel = (type: string) => {
         <div v-else-if="tickets.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <div v-for="ticket in tickets" :key="ticket.id"
             class="card-themed p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:hover:shadow-gray-800/40"
-            @click="fetchTicketDetails(ticket.id)" role="button"
-            :aria-label="`View details for ticket ${ticket.title}`">
+            @click="getTicketDetail(ticket.id)" role="button" :aria-label="`View details for ticket ${ticket.title}`">
             <div class="flex justify-between items-start mb-2 gap-2">
               <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 break-all"
                 :title="ticket.title">
@@ -198,11 +166,11 @@ const getTypeLabel = (type: string) => {
           <i class="pi pi-ticket text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
           <p class="text-lg text-gray-500 dark:text-gray-400 mb-6">No tickets found</p>
           <Button label="Refresh" icon="pi pi-refresh"
-            class="bg-green-600 hover:bg-green-700 border-green-600 text-white px-5 py-2.5" @click="fetchTickets" />
+            class="bg-green-600 hover:bg-green-700 border-green-600 text-white px-5 py-2.5" @click="getAllTickets" />
         </div>
 
         <!-- Pagination -->
-        <div v-if="!loading && tickets.length > 0 && totalPages > 1" class="mt-6 flex justify-center">
+        <div v-if="!isLoading && tickets.length > 0 && totalPages > 1" class="mt-6 flex justify-center">
           <Paginator :rows="rowsPerPage" :totalRecords="totalPages * rowsPerPage"
             :first="(currentPage - 1) * rowsPerPage" @page="onPageChange($event)" :rowsPerPageOptions="[]"
             template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink" class="paginator-themed">

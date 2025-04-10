@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { memoryStorage } from '@/storage';
-import type { ResidenceDetail, ResidenceResponse } from '@/types';
+import type { Ticket, TicketResponse } from '@/types';
 
-export const residenceService = {
-  async getAll(page: number = 1, limit: number = 10, opts?: { cache: boolean; }): Promise<ResidenceResponse> {
-    const response = await axios.get<ResidenceResponse>("/residences", {
+export const ticketService = {
+  async getAll(page: number = 1, limit: number = 10, opts?: { cache: boolean; }): Promise<TicketResponse> {
+    const response = await axios.get<TicketResponse>("/tickets", {
       headers: {
         Authorization: `Bearer ${memoryStorage.getToken()}`,
         ...(opts?.cache === false ? { 'Cache-Control': 'no-cache' } : {})
@@ -14,8 +14,8 @@ export const residenceService = {
     return response.data;
   },
 
-  async getById(id: number): Promise<ResidenceDetail> {
-    const response = await axios.get<ResidenceDetail>(`/residences/${id}`, {
+  async getById(id: number): Promise<Ticket> {
+    const response = await axios.get<Ticket>(`/tickets/${id}`, {
       headers: {
         Authorization: `Bearer ${memoryStorage.getToken()}`,
       }
