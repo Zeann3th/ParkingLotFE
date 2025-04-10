@@ -8,16 +8,17 @@ export function useAuth() {
   const decodedToken = computed(() => {
     if (!token.value) return null;
     try {
-      return jwtDecode(token.value) as { role: string; username: string; email: string; };
+      return jwtDecode(token.value) as { sub: number, role: string; username: string; email: string; };
     } catch (e) {
       return null;
     }
   });
 
+  const id = computed(() => decodedToken.value?.sub || "");
   const role = computed(() => decodedToken.value?.role || "");
   const username = computed(() => decodedToken.value?.username || "");
   const email = computed(() => decodedToken.value?.email || "");
 
-  return { role, username, email };
+  return { id, role, username, email };
 }
 
