@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import axios from 'axios';
 import { useToast } from 'primevue';
 import { ref } from 'vue';
-import { memoryStorage } from '@/storage';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { CheckIn, CheckOut } from '@/types';
+import { parkingService } from '@/services/parking.service';
 
 const toast = useToast();
 
@@ -37,64 +36,45 @@ const validateCheckOut = () => {
   return true;
 }
 
-
 const handleCheckIn = async (event: Event) => {
   event.preventDefault();
   if (!validateCheckIn()) return;
-
   try {
-    const payload = {
-      ...checkIn.value,
+    const response = await parkingService.checkIn({
       sectionId: Number(checkIn.value.sectionId),
       ticketId: Number(checkIn.value.ticketId),
-    }
-    const response = await axios.post("/parking/check-in", payload, {
-      headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
+      plate: checkIn.value.plate,
+      type: checkIn.value.type
     });
-    const { status, data } = response;
-    if (status === 201) {
+    if (!response.message) {
       toast.add({ severity: 'success', summary: 'Success', detail: 'Check-in successful', life: 3000 });
-      checkOut.value = {
-        sectionId: String(checkIn.value.sectionId),
-        ticketId: String(checkIn.value.ticketId),
-        plate: checkIn.value.plate
-      };
       checkIn.value = { sectionId: '', ticketId: '', plate: '', type: '' };
     } else {
-      toast.add({ severity: 'error', summary: 'Check-In Failed', detail: data?.message || 'An unknown error occurred.', life: 4000 });
+      toast.add({ severity: 'error', summary: 'Check-In Failed', detail: response.message || 'An unknown error occurred.', life: 4000 });
     }
   } catch (error: any) {
-    console.error("Check-in error:", error);
-    const errorMsg = error.response?.data?.message || 'Failed to check in due to a server error.';
-    toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 4000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to check in due to a server error.', life: 4000 });
   }
 };
 
 const handleCheckOut = async (event: Event) => {
   event.preventDefault();
   if (!validateCheckOut()) return;
-
   try {
-    const payload = {
-      ...checkOut.value,
+    const response = await parkingService.checkOut({
       sectionId: Number(checkOut.value.sectionId),
       ticketId: Number(checkOut.value.ticketId),
-    }
-    const response = await axios.post("/parking/check-out", payload, {
-      headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
+      plate: checkOut.value.plate
     });
-    const { status, data } = response;
-    if (status === 200) {
-      const feeFormatted = new Intl.NumberFormat('vi-VN').format(data.fee || 0);
+    if (!response.message) {
+      const feeFormatted = new Intl.NumberFormat('vi-VN').format(response.fee || 0);
       toast.add({ severity: 'success', summary: 'Success', detail: `Check-out successful. Fee: ${feeFormatted} VND`, life: 8000 });
       checkOut.value = { sectionId: '', ticketId: '', plate: '' };
     } else {
-      toast.add({ severity: 'error', summary: 'Check-Out Failed', detail: data?.message || 'An unknown error occurred.', life: 4000 });
+      toast.add({ severity: 'error', summary: 'Check-Out Failed', detail: response.message || 'An unknown error occurred.', life: 4000 });
     }
   } catch (error: any) {
-    console.error("Check-out error:", error);
-    const errorMsg = error.response?.data?.message || 'Failed to check out due to a server error.';
-    toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 4000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to check out due to a server error.', life: 4000 });
   }
 };
 </script>
@@ -208,10 +188,8 @@ const handleCheckOut = async (event: Event) => {
   --surface-section: #f9fafb;
   --surface-input: #ffffff;
   --surface-border: #d1d5db;
-  /* Slightly darker default border for visibility */
   --surface-border-hover: #9ca3af;
   --surface-focus-border: var(--primary-color);
-  /* Match focus ring */
   --surface-hover: #f3f4f6;
   --focus-ring-color: #16a34a;
   --primary-color: #16a34a;
@@ -225,11 +203,9 @@ const handleCheckOut = async (event: Event) => {
   --danger-gradient-to: #dc2626;
   --button-danger-text: #1f2937;
 
-  /* Enhanced Shadows */
   --shadow-light: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-light-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
-  /* Toast stays the same */
   --toast-bg: rgba(255, 255, 255, 0.95);
   --toast-border: rgba(229, 231, 235, 0.8);
   --toast-text: #374151;
@@ -249,7 +225,6 @@ html.dark {
   --surface-border-hover: #6b7280;
   --surface-focus-border: var(--focus-ring-color);
   --surface-hover: #374151;
-  /* Adjusted dark hover */
   --focus-ring-color: #34d399;
   --primary-color: #34d399;
   --primary-color-hover: #10b981;
@@ -262,7 +237,6 @@ html.dark {
   --danger-gradient-to: #ef4444;
   --button-danger-text: #ffffff;
 
-  /* Enhanced Shadows for Dark */
   --shadow-light: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
   --shadow-light-hover: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2);
 
@@ -275,14 +249,11 @@ html.dark {
   --toast-error-border: #f87171;
 }
 
-/* CARD STYLING - NOW THE PRIMARY "BOX" */
 .card-themed {
   background-color: var(--surface-card);
   border: 1px solid var(--surface-border);
-  /* Using the border for separation */
   border-radius: 1rem;
   box-shadow: var(--shadow-light);
-  /* Using variable for shadow */
   overflow: hidden;
   transition: all 0.3s ease-out;
 }
@@ -290,9 +261,7 @@ html.dark {
 .card-themed:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-light-hover);
-  /* Enhanced hover shadow */
   border-color: var(--surface-border-hover);
-  /* Optional: Slightly change border on hover */
 }
 
 /* Card Header */
@@ -308,7 +277,6 @@ html.dark {
 
 html.dark .card-header-themed {
   background-color: var(--surface-card);
-  /* Blend header in dark mode */
   border-bottom-color: var(--surface-border);
 }
 
@@ -320,7 +288,6 @@ html.dark .card-header-themed {
   align-items: center;
   justify-content: center;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  /* Simpler shadow */
   flex-shrink: 0;
   transition: background-color 0.3s, color 0.3s;
 }
@@ -331,11 +298,8 @@ html.dark .card-header-themed {
   transition: color 0.3s;
 }
 
-/* FORM AREA - NO BORDERS/BACKGROUND NEEDED */
 .form-fields-container {
-  /* Removed border, background, padding from here */
   margin-bottom: 0;
-  /* Let spacing be handled by parent or grid gap */
 }
 
 .label-themed {
@@ -346,7 +310,6 @@ html.dark .card-header-themed {
   transition: color 0.3s;
 }
 
-/* INPUT STYLING */
 .input-themed {
   display: block;
   width: 100%;
@@ -366,16 +329,13 @@ html.dark .card-header-themed {
   margin: 0;
 }
 
-/* Input Icon Positioning */
 .input-icon {
   position: absolute;
   left: 0.75rem;
-  /* Adjust as needed */
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-color-secondary);
   pointer-events: none;
-  /* Prevent icon from blocking input clicks */
 }
 
 
@@ -388,10 +348,8 @@ html.dark .card-header-themed {
   outline: none;
   border-color: var(--surface-focus-border);
   box-shadow: 0 0 0 2px var(--focus-ring-color);
-  /* Ring effect using focus border color */
 }
 
-/* BUTTON STYLING */
 .button-themed-primary,
 .button-themed-danger {
   display: inline-flex;
@@ -402,7 +360,6 @@ html.dark .card-header-themed {
   padding: 0.875rem 1rem;
   border-radius: 0.375rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  /* Simpler shadow for button */
   transition: all 0.2s ease-in-out;
   border: none;
   color: var(--button-primary-text);
@@ -415,10 +372,8 @@ html.dark .card-header-themed {
 .button-themed-primary:hover,
 .button-themed-danger:hover {
   transform: translateY(-1px);
-  /* Subtle lift */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   filter: brightness(1.05);
-  /* Slightly brighten gradient */
 }
 
 .button-themed-primary:active,
@@ -436,7 +391,6 @@ html.dark .card-header-themed {
   background-image: linear-gradient(to right, var(--danger-gradient-from), var(--danger-gradient-to));
 }
 
-/* ANIMATION (Unchanged) */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -461,7 +415,6 @@ html.dark .card-header-themed {
   animation-delay: 0.4s;
 }
 
-/* TOAST (Unchanged) */
 :deep(.p-toast) {
   opacity: 0.98;
 }
