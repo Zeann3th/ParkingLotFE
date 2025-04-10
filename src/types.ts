@@ -13,6 +13,7 @@ export interface Notification {
 export interface NotificationResponse {
   count: number;
   data: Notification[];
+  message?: string;
 }
 
 export type CheckIn = {
@@ -56,6 +57,7 @@ export type ResidenceDetail = {
 export interface ResidenceResponse {
   count: number;
   data: Residence[];
+  message?: string;
 }
 
 export interface Pricing {
@@ -76,6 +78,7 @@ export interface Ticket {
 export interface TicketResponse {
   count: number;
   data: Ticket[];
+  message?: string;
 }
 
 export interface Transaction {
@@ -90,6 +93,7 @@ export interface Transaction {
 export interface TransactionResponse {
   count: number;
   data: Transaction[];
+  message?: string;
 }
 
 

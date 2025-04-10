@@ -1,27 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
-import axios from 'axios';
-import Dialog from 'primevue/dialog';
-import Avatar from 'primevue/avatar';
-import Skeleton from 'primevue/skeleton';
-import Button from 'primevue/button';
-import Paginator from 'primevue/paginator';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import ConfirmDialog from 'primevue/confirmdialog';
-import { useConfirm } from 'primevue/useconfirm';
-import { memoryStorage } from '@/storage';
-import { useToast } from 'primevue';
+import { Dialog, Avatar, Skeleton, Button, Paginator, InputText, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-import type { Notification, NotificationResponse } from '@/types';
+import type { Notification } from '@/types';
+import { notificationService } from '@/services/notification.service';
+import { formatDate, getInitials, getRandomColor, truncateStr } from '@/utils';
 
 const { role } = useAuth();
 const notifications: Ref<Notification[]> = ref([]);
 const selectedNotification = ref<Notification | null>(null);
-const loading = ref(true);
-const detailsLoading = ref(false);
+const isLoading = ref(true);
+const isMutated = ref(false);
+const isDetailLoading = ref(false);
 const showDetailDialog = ref<boolean>(false);
 const showNewNotificationDialog = ref<boolean>(false);
 const toast = useToast();
@@ -38,39 +30,26 @@ const totalPages = ref(1);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
 
-const fetchNotifications = async () => {
-  loading.value = true;
+const getAllNotifications = async () => {
+  isLoading.value = true;
   try {
-    const response = await axios.get<NotificationResponse>(
-      '/notifications',
-      {
-        headers: {
-          Authorization: `Bearer ${memoryStorage.getToken()}`,
-        },
-        params: {
-          page: currentPage.value,
-          limit: rowsPerPage.value,
-        }
-      }
-    );
-    notifications.value = response.data.data;
-    totalPages.value = response.data.count;
+    const response = await notificationService.getAll(currentPage.value, rowsPerPage.value, { cache: isMutated.value });
+    if (response.message) {
+      toast.add({ severity: 'error', summary: 'Error', detail: response.message, life: 3000, });
+    } else {
+      notifications.value = response.data;
+      totalPages.value = response.count;
+    }
   } catch (error) {
-    console.error('Error fetching notifications:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load notifications',
-      life: 3000,
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load notifications', life: 3000, });
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 
 watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
-  fetchNotifications();
+  getAllNotifications();
 }, { immediate: true });
 
 const updateRouteParams = () => {
@@ -86,59 +65,30 @@ const onPageChange = (event: { page: number }) => {
   updateRouteParams();
 };
 
-const fetchNotificationDetails = async (id: number) => {
-  detailsLoading.value = true;
+const getNotificationDetail = async (id: number) => {
+  isDetailLoading.value = true;
   showDetailDialog.value = true;
 
   try {
-    const response = await axios.get<Notification>(`/notifications/${id}`, {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      },
-    });
-    selectedNotification.value = response.data;
+    const response = await notificationService.getById(id);
+    selectedNotification.value = response;
 
-    // Mark notification as read if it's pending
-    if (response.data.status === 'PENDING') {
-      await markAsRead(id);
+    if (response.status === 'PENDING') {
+      readNotification(id);
     }
   } catch (error) {
-    console.error('Error fetching notification details:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load notification details',
-      life: 3000,
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load notification details', life: 3000, });
   } finally {
-    detailsLoading.value = false;
+    isDetailLoading.value = false;
   }
 };
 
-const markAsRead = async (id: number) => {
+const readNotification = async (id: number) => {
   try {
-    await axios.patch(`/notifications/${id}`,
-      { action: "READ" },
-      {
-        headers: {
-          Authorization: `Bearer ${memoryStorage.getToken()}`,
-        },
-      }
-    );
-
-    // Update local notification status in list
-    const index = notifications.value.findIndex(n => n.id === id);
-    if (index !== -1) {
-      notifications.value[index].status = 'READ';
-    }
-
-    // Update selected notification if it's open
-    if (selectedNotification.value && selectedNotification.value.id === id) {
-      selectedNotification.value.status = 'READ';
-    }
+    await notificationService.update(id)
+    isMutated.value = true;
   } catch (error) {
-    console.error('Error marking notification as read:', error);
-    // We don't show toast here to avoid disrupting the user experience
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to mark notification as read', life: 3000, });
   }
 };
 
@@ -154,24 +104,8 @@ const deleteNotification = (id: number) => {
     acceptClass: 'p-button-danger',
     accept: async () => {
       try {
-        await axios.delete(`/notifications/${id}`, {
-          headers: {
-            Authorization: `Bearer ${memoryStorage.getToken()}`,
-          },
-        });
-
-        toast.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Notification deleted successfully',
-          life: 3000,
-        });
-
-        // Remove from local list and close dialog if open
-        notifications.value = notifications.value.filter(n => n.id !== id);
-        if (showDetailDialog.value && selectedNotification.value?.id === id) {
-          showDetailDialog.value = false;
-        }
+        await notificationService.delete(id);
+        isMutated.value = true;
       } catch (error) {
         console.error('Error deleting notification:', error);
         toast.add({
@@ -187,7 +121,6 @@ const deleteNotification = (id: number) => {
 
 const openNewNotificationDialog = () => {
   showNewNotificationDialog.value = true;
-  // Reset form
   newNotification.value = {
     to: '',
     message: ''
@@ -196,12 +129,7 @@ const openNewNotificationDialog = () => {
 
 const sendNotification = async () => {
   if (!newNotification.value.message.trim()) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Warning',
-      detail: 'Please enter a message',
-      life: 3000,
-    });
+    toast.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a message', life: 3000, });
     return;
   }
 
@@ -210,47 +138,18 @@ const sendNotification = async () => {
       message: newNotification.value.message
     };
 
-    // Only add 'to' field if a username was entered
     if (newNotification.value.to.trim()) {
-      // Assuming 'to' should be treated as a number (User ID) based on original InputText type='number'
       const toValue = parseInt(newNotification.value.to);
       if (!isNaN(toValue) && toValue > 0) {
         payload.to = toValue;
-      } else {
-        // Optionally handle invalid input (e.g., show toast)
-        console.warn('Invalid User ID entered');
-        // Consider preventing send or showing a warning if ID is required and invalid
       }
     }
-
-
-    await axios.post('/notifications', payload, {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      }
-    });
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Notification sent successfully',
-      life: 3000,
-    });
-
-    // Reset form with empty string
+    await notificationService.create(payload.message, payload.to);
     newNotification.value = { to: '', message: '' };
     showNewNotificationDialog.value = false;
-
-    // Refresh notifications list
-    fetchNotifications();
+    isMutated.value = true;
   } catch (error) {
-    console.error('Error sending notification:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to send notification',
-      life: 3000,
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to send notification', life: 3000, });
   }
 };
 
@@ -258,47 +157,9 @@ onMounted(() => {
   if (!route.query.page) {
     updateRouteParams();
   }
-  // fetchNotifications is called by the watch effect on route.query
 });
 
 const isAdmin = computed(() => role.value === 'ADMIN');
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-
-  if (date.toDateString() === now.toDateString()) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  }
-
-  return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
-const truncateMessage = (message: string, maxLength = 90) => {
-  if (message.length <= maxLength) return message;
-  return message.substring(0, maxLength) + '...';
-};
-
-const getInitials = (name: string) => {
-  return name.split(' ')
-    .map(part => part.charAt(0))
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
-};
-
-const getAvatarColor = (userId: number) => {
-  // Keep colors vibrant enough for both light and dark backgrounds
-  const colors = [
-    '#7986CB', '#64B5F6', '#4FC3F7', '#4DD0E1', '#4DB6AC',
-    '#81C784', '#AED581', '#FFB74D', '#FF8A65', '#A1887F'
-  ];
-  return colors[userId % colors.length];
-};
 
 const cancelNewNotification = () => {
   newNotification.value = { to: '', message: '' };
@@ -315,11 +176,11 @@ const cancelNewNotification = () => {
           <h1 class="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">Inbox</h1>
           <Button icon="pi pi-refresh"
             class="p-button-text text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400"
-            @click="fetchNotifications" />
+            @click="getAllNotifications" />
         </div>
 
         <!-- Skeleton Loading -->
-        <div v-if="loading" class="space-y-3">
+        <div v-if="isLoading" class="space-y-3">
           <div v-for="n in 5" :key="n"
             class="bg-white dark:bg-gray-800 dark:bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow border border-gray-200 dark:border-transparent dark:backdrop-blur-sm">
             <Skeleton shape="circle" size="3rem" class="bg-gray-300 dark:bg-gray-700 flex-shrink-0"></Skeleton>
@@ -342,10 +203,10 @@ const cancelNewNotification = () => {
               ? 'border-gray-200 dark:border-gray-700 opacity-80 dark:opacity-70'
               : 'border-green-500 dark:border-green-700'
           ]">
-            <div class="flex-1 flex items-start cursor-pointer" @click="fetchNotificationDetails(notification.id)">
+            <div class="flex-1 flex items-start cursor-pointer" @click="getNotificationDetail(notification.id)">
               <!-- Avatar -->
               <Avatar :label="getInitials(notification.from.name)" class="flex-shrink-0 mr-4"
-                :style="{ backgroundColor: getAvatarColor(notification.from.id), color: '#fff' }" />
+                :style="{ backgroundColor: getRandomColor(notification.from.id), color: '#fff' }" />
               <!-- Ensure text is white -->
 
               <!-- Content -->
@@ -357,7 +218,7 @@ const cancelNewNotification = () => {
                 <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">@{{ notification.from.username }}</div>
                 <div
                   :class="['text-sm', notification.status === 'READ' ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300']">
-                  {{ truncateMessage(notification.message) }}
+                  {{ truncateStr(notification.message) }}
                 </div>
                 <div v-if="notification.status === 'PENDING'" class="mt-2">
                   <span
@@ -376,12 +237,12 @@ const cancelNewNotification = () => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!loading && notifications.length === 0"
+        <div v-if="!isLoading && notifications.length === 0"
           class="text-center py-12 bg-white dark:bg-gray-800 dark:bg-opacity-80 rounded-lg shadow border border-gray-200 dark:border-transparent dark:backdrop-blur-sm">
           <i class="pi pi-inbox text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
           <p class="text-lg text-gray-500 dark:text-gray-400">Your inbox is empty</p>
           <Button label="Refresh" icon="pi pi-refresh"
-            class="mt-4 bg-green-600 hover:bg-green-700 border-green-600 text-white" @click="fetchNotifications" />
+            class="mt-4 bg-green-600 hover:bg-green-700 border-green-600 text-white" @click="getAllNotifications" />
         </div>
 
         <!-- Pagination -->
@@ -393,7 +254,7 @@ const cancelNewNotification = () => {
             <template #start>
               <!-- Ensure text color matches theme -->
               <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages
-                }}</span>
+              }}</span>
             </template>
           </Paginator>
         </div>
@@ -404,11 +265,11 @@ const cancelNewNotification = () => {
           :style="{ width: '90%', maxWidth: '600px' }">
 
           <!-- Detail Content -->
-          <div v-if="selectedNotification && !detailsLoading" class="p-4 md:p-6">
+          <div v-if="selectedNotification && !isDetailLoading" class="p-4 md:p-6">
             <div class="mb-6">
               <div class="flex items-center space-x-3">
                 <Avatar :label="getInitials(selectedNotification.from.name)" class="flex-shrink-0" size="large"
-                  :style="{ backgroundColor: getAvatarColor(selectedNotification.from.id), color: '#fff' }" />
+                  :style="{ backgroundColor: getRandomColor(selectedNotification.from.id), color: '#fff' }" />
                 <div>
                   <h2 class="text-xl font-bold text-green-600 dark:text-green-400">{{ selectedNotification.from.name }}
                   </h2>
@@ -421,7 +282,7 @@ const cancelNewNotification = () => {
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-500 dark:text-gray-400">Date</span>
                 <span class="font-medium text-gray-800 dark:text-gray-100">{{ formatDate(selectedNotification.createdAt)
-                  }}</span>
+                }}</span>
               </div>
 
               <div class="flex flex-col space-y-1">
@@ -440,7 +301,7 @@ const cancelNewNotification = () => {
                 <span class="text-sm text-gray-500 dark:text-gray-400">Message</span>
                 <span class="font-medium text-gray-800 dark:text-gray-100 whitespace-pre-line">{{
                   selectedNotification.message
-                  }}</span>
+                }}</span>
               </div>
             </div>
 
@@ -457,7 +318,7 @@ const cancelNewNotification = () => {
           </div>
 
           <!-- Loading state in dialog -->
-          <div v-if="detailsLoading" class="p-4 space-y-4">
+          <div v-if="isDetailLoading" class="p-4 space-y-4">
             <div class="flex items-start space-x-4 mb-6">
               <Skeleton shape="circle" size="3.5rem" class="bg-gray-300 dark:bg-gray-700"></Skeleton>
               <div class="flex-1">
