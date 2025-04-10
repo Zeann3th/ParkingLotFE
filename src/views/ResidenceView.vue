@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
-import axios from 'axios';
-import { memoryStorage } from '@/storage';
-import Skeleton from 'primevue/skeleton';
-import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
-import Paginator from 'primevue/paginator';
-import { useToast } from 'primevue';
+import { Skeleton, Dialog, Button, Paginator, useToast } from 'primevue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-import type { Residence, ResidenceDetail, ResidenceResponse } from '@/types';
+import type { Residence, ResidenceDetail } from '@/types';
+import { residenceService } from '@/services/residence.service';
 
 const { role } = useAuth();
 const residences: Ref<Residence[]> = ref([]);
 const selectedResidence = ref<ResidenceDetail | null>(null);
-const loading = ref(true);
+const isLoading = ref(true);
+const isMutated = ref(false);
 const detailsLoading = ref(false);
 const showDetailDialog = ref<boolean>(false);
 const toast = useToast();
@@ -26,39 +22,22 @@ const totalPages = ref(1);
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
 
-const fetchResidences = async () => {
-  loading.value = true;
+const getAllResidences = async () => {
+  isLoading.value = true;
   try {
-    const response = await axios.get<ResidenceResponse>(
-      '/residences',
-      {
-        headers: {
-          Authorization: `Bearer ${memoryStorage.getToken()}`,
-        },
-        params: {
-          page: currentPage.value,
-          limit: rowsPerPage.value,
-        }
-      }
-    );
-    residences.value = response.data.data;
-    totalPages.value = response.data.count;
+    const response = await residenceService.getAll(currentPage.value, rowsPerPage.value, { cache: isMutated.value });
+    residences.value = response.data;
+    totalPages.value = response.count;
   } catch (error) {
-    console.error('Error fetching residences:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load residences',
-      life: 3000,
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load residences', life: 3000, });
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 
 watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
-  fetchResidences();
+  getAllResidences();
 }, { immediate: true });
 
 const updateRouteParams = () => {
@@ -74,17 +53,13 @@ const onPageChange = (event: { page: number }) => {
   updateRouteParams();
 };
 
-const fetchResidenceDetails = async (id: number) => {
+const getResidenceDetail = async (id: number) => {
   detailsLoading.value = true;
   showDetailDialog.value = true;
 
   try {
-    const response = await axios.get<ResidenceDetail>(`/residences/${id}`, {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      },
-    });
-    selectedResidence.value = response.data;
+    const response = await residenceService.getById(id);
+    selectedResidence.value = response;
   } catch (error) {
     console.error('Error fetching residence details:', error);
     toast.add({
@@ -146,11 +121,11 @@ const getVehicleTypeIcon = (type: string) => {
         <div class="flex items-center justify-between mb-6">
           <h1 class="text-2xl md:text-3xl font-bold text-green-400">Residences</h1>
           <Button icon="pi pi-refresh" class="p-button-text text-gray-400 hover:text-green-400"
-            @click="fetchResidences" />
+            @click="getAllResidences" />
         </div>
 
         <!-- Skeleton Loading -->
-        <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <div v-for="n in 12" :key="n" class="bg-gray-800 bg-opacity-80 rounded-lg shadow p-4 backdrop-blur-sm">
             <Skeleton width="40%" height="2rem" class="mb-2 bg-gray-700" />
             <div class="flex space-x-6">
@@ -164,7 +139,7 @@ const getVehicleTypeIcon = (type: string) => {
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <div v-for="residence in residences" :key="residence.id"
             class="bg-gray-800 bg-opacity-80 hover:bg-gray-700 hover:bg-opacity-90 transition-all duration-200 rounded-lg shadow-sm p-4 cursor-pointer border border-gray-700 backdrop-blur-sm"
-            @click="fetchResidenceDetails(residence.id)">
+            @click="getResidenceDetail(residence.id)">
             <div class="flex justify-between items-start mb-2">
               <h2 class="text-lg font-semibold text-gray-100">Building {{ residence.building }}</h2>
               <span class="text-xs font-bold px-2 py-1 rounded-full" :class="getBuildingColor(residence.building)">
@@ -177,12 +152,12 @@ const getVehicleTypeIcon = (type: string) => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!loading && residences.length === 0"
+        <div v-if="!isLoading && residences.length === 0"
           class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
           <i class="pi pi-building text-6xl text-gray-600 mb-4"></i>
           <p class="text-lg text-gray-400">No residences found</p>
           <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
-            @click="fetchResidences" />
+            @click="getAllResidences" />
         </div>
 
         <!-- Pagination -->
