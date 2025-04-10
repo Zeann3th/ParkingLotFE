@@ -2,33 +2,29 @@
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Dialog, Avatar, Skeleton, Button, Paginator, InputText, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Notification } from '@/types';
 import { notificationService } from '@/services/notification.service';
 import { formatDate, getInitials, getRandomColor, truncateStr } from '@/utils';
+import { usePagination } from '@/composables/pagination';
+
+const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
+  closeDialog, showDetailDialog } = usePagination();
 
 const { role } = useAuth();
 const notifications: Ref<Notification[]> = ref([]);
 const selectedNotification = ref<Notification | null>(null);
-const isLoading = ref(true);
-const isMutated = ref(false);
 const isDetailLoading = ref(false);
-const showDetailDialog = ref<boolean>(false);
 const showNewNotificationDialog = ref<boolean>(false);
 const toast = useToast();
 const route = useRoute();
-const router = useRouter();
 const confirm = useConfirm();
 
 const newNotification = ref({
   to: '' as string,
   message: ''
 });
-
-const totalPages = ref(1);
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
 
 const getAllNotifications = async () => {
   isLoading.value = true;
@@ -51,19 +47,6 @@ watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
   getAllNotifications();
 }, { immediate: true });
-
-const updateRouteParams = () => {
-  router.push({
-    query: {
-      page: currentPage.value,
-    }
-  });
-};
-
-const onPageChange = (event: { page: number }) => {
-  currentPage.value = event.page + 1;
-  updateRouteParams();
-};
 
 const getNotificationDetail = async (id: number) => {
   isDetailLoading.value = true;
@@ -90,10 +73,6 @@ const readNotification = async (id: number) => {
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to mark notification as read', life: 3000, });
   }
-};
-
-const closeDialog = () => {
-  showDetailDialog.value = false;
 };
 
 const deleteNotification = (id: number) => {
@@ -409,30 +388,19 @@ const cancelNewNotification = () => {
   font-size: 24px;
   transition: all 0.2s ease;
   z-index: 99;
-  /* Ensure it's above other content */
 }
 
-/* --- Light Mode Base Styles --- */
 :deep(.p-dialog) {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-  /* Lighter shadow */
 }
 
-/* Use Tailwind classes on the dialog directly where possible (added dialog-themed class) */
-/* Base styles for elements within Dialog using :deep if Tailwind classes aren't enough */
 :deep(.dialog-themed .p-dialog-header) {
   background-color: #fff;
-  /* Light bg */
   color: #1f2937;
-  /* Dark text */
   border-bottom: 1px solid #e5e7eb;
-  /* Light border */
   padding: 1rem 1.5rem;
-  /* PrimeVue defaults, adjust if needed */
   border-top-left-radius: 0.5rem;
-  /* Match parent */
   border-top-right-radius: 0.5rem;
-  /* Match parent */
 }
 
 :deep(.dialog-themed .p-dialog-content) {
@@ -561,43 +529,29 @@ const cancelNewNotification = () => {
 
 :deep(.p-confirm-dialog .p-dialog-header) {
   background-color: #fff;
-  /* Light bg */
   color: #1f2937;
-  /* Dark text */
   border-bottom: 1px solid #e5e7eb;
-  /* Light border */
   padding: 1rem 1.5rem;
   font-weight: 600;
 }
 
 :deep(.p-confirm-dialog .p-confirm-dialog-icon) {
   color: #f59e0b;
-  /* Amber color for warning icon */
 }
 
-
-/* --- Dark Mode Overrides (Applied when html has 'dark' class) --- */
-/* Use html.dark to increase specificity over base PrimeVue styles */
-
-/* Re-apply original dark :deep styles */
 html.dark :deep(.p-dialog) {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 html.dark :deep(.dialog-themed .p-dialog-header) {
   background-color: rgba(31, 41, 55, 0.9);
-  /* Dark Gray Header */
   color: #f3f4f6;
-  /* Light Text */
   border-bottom: 1px solid rgba(55, 65, 81, 0.8);
 }
 
 html.dark :deep(.dialog-themed .p-dialog-content) {
   background-color: rgba(31, 41, 55, 0.9);
-  /* Dark Gray Content */
   color: #f3f4f6;
-  /* Light text */
-  /* border radius is handled by the main element now */
 }
 
 html.dark :deep(.p-dialog-mask) {
@@ -615,12 +569,10 @@ html.dark :deep(.p-paginator .p-paginator-last),
 html.dark :deep(.p-paginator .p-paginator-first),
 html.dark :deep(.p-paginator .p-paginator-prev) {
   color: #9ca3af;
-  /* Light gray */
 }
 
 html.dark :deep(.p-paginator .p-paginator-page.p-highlight) {
   background: #10b981;
-  /* Green */
   color: white;
 }
 
@@ -630,9 +582,7 @@ html.dark :deep(.p-paginator .p-paginator-last:hover),
 html.dark :deep(.p-paginator .p-paginator-first:hover),
 html.dark :deep(.p-paginator .p-paginator-prev:hover) {
   color: #10b981;
-  /* Green */
   background: rgba(16, 185, 129, 0.1);
-  /* Transparent green */
 }
 
 html.dark :deep(.input-themed),
@@ -640,20 +590,15 @@ html.dark :deep(.p-inputtext),
 html.dark :deep(.textarea-themed),
 html.dark :deep(.p-textarea) {
   background-color: rgba(55, 65, 81, 0.8);
-  /* Dark input bg */
   border-color: rgba(75, 85, 99, 0.8);
-  /* Dark border */
   color: #f3f4f6;
-  /* Light text */
 }
 
-/* Dark mode placeholder color */
 html.dark :deep(.input-themed::placeholder),
 html.dark :deep(.p-inputtext::placeholder),
 html.dark :deep(.textarea-themed::placeholder),
 html.dark :deep(.p-textarea::placeholder) {
   color: #9ca3af;
-  /* Slightly lighter gray for placeholder in dark */
 }
 
 html.dark :deep(.input-themed:focus),
@@ -673,40 +618,32 @@ html.dark :deep(.p-button.p-button-text:hover) {
   color: #10b981;
 }
 
-/* Skeleton for Dark Mode */
 html.dark :deep(.p-skeleton) {
   background-color: rgba(55, 65, 81, 0.5);
-  /* Dark gray base */
   background-image: linear-gradient(90deg,
       rgba(55, 65, 81, 0.5) 0%,
       rgba(75, 85, 99, 0.5) 50%,
       rgba(55, 65, 81, 0.5) 100%);
   opacity: 1.0;
-  /* Keep opacity normal */
 }
 
 html.dark :deep(.p-confirm-dialog .p-dialog-content) {
   background-color: rgba(31, 41, 55, 0.95);
-  /* Darker dialog */
   color: #f3f4f6;
 }
 
 html.dark :deep(.p-confirm-dialog .p-dialog-footer) {
   background-color: rgba(31, 41, 55, 0.95);
-  /* Darker footer */
   border-top: 1px solid rgba(55, 65, 81, 0.8);
-  /* Dark border */
 }
 
 html.dark :deep(.p-confirm-dialog .p-dialog-header) {
   background-color: rgba(31, 41, 55, 0.95);
-  /* Darker header */
   border-bottom: 1px solid rgba(55, 65, 81, 0.8);
   color: #f3f4f6;
 }
 
 html.dark :deep(.p-confirm-dialog .p-confirm-dialog-icon) {
   color: #fbbf24;
-  /* Keep warning icon color similar */
 }
 </style>

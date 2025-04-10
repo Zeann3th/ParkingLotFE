@@ -2,25 +2,21 @@
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Skeleton, Dialog, Button, Paginator, useToast } from 'primevue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Residence, ResidenceDetail } from '@/types';
 import { residenceService } from '@/services/residence.service';
+import { usePagination } from '@/composables/pagination';
+
+const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
+  closeDialog, showDetailDialog } = usePagination();
 
 const { role } = useAuth();
 const residences: Ref<Residence[]> = ref([]);
 const selectedResidence = ref<ResidenceDetail | null>(null);
-const isLoading = ref(true);
-const isMutated = ref(false);
 const detailsLoading = ref(false);
-const showDetailDialog = ref<boolean>(false);
 const toast = useToast();
 const route = useRoute();
-const router = useRouter();
-
-const totalPages = ref(1);
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
 
 const getAllResidences = async () => {
   isLoading.value = true;
@@ -40,19 +36,6 @@ watch(() => route.query, (newQuery) => {
   getAllResidences();
 }, { immediate: true });
 
-const updateRouteParams = () => {
-  router.push({
-    query: {
-      page: currentPage.value,
-    }
-  });
-};
-
-const onPageChange = (event: { page: number }) => {
-  currentPage.value = event.page + 1;
-  updateRouteParams();
-};
-
 const getResidenceDetail = async (id: number) => {
   detailsLoading.value = true;
   showDetailDialog.value = true;
@@ -71,10 +54,6 @@ const getResidenceDetail = async (id: number) => {
   } finally {
     detailsLoading.value = false;
   }
-};
-
-const closeDialog = () => {
-  showDetailDialog.value = false;
 };
 
 onMounted(() => {

@@ -8,27 +8,27 @@ import Button from 'primevue/button';
 import Paginator from 'primevue/paginator';
 import { memoryStorage } from '@/storage';
 import { useToast } from 'primevue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Transaction, TransactionResponse } from '@/types';
+import { usePagination } from '@/composables/pagination';
+import { getRandomColor, getInitials } from '@/utils';
+
+const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
+  closeDialog, showDetailDialog } = usePagination();
 
 const transactions = ref<Transaction[]>([]);
 const selectedTransaction = ref<Transaction | null>(null);
-const loading = ref<boolean>(true);
 const detailsLoading = ref<boolean>(false);
 const processingCheckout = ref<boolean>(false);
 const toast = useToast();
-const showDetailDialog = ref<boolean>(false);
 const skeletonItems = Array(5).fill({});
 const route = useRoute();
-const router = useRouter();
 
-const totalPages = ref(1);
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
+console.log(isLoading, isMutated);
 
 const fetchTransactions = async () => {
-  loading.value = true;
+  isLoading.value = true;
   try {
     const response = await axios.get<TransactionResponse>('/transactions', {
       headers: {
@@ -49,7 +49,7 @@ const fetchTransactions = async () => {
       life: 3000,
     });
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 
@@ -57,19 +57,6 @@ watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
   fetchTransactions();
 }, { immediate: true });
-
-const updateRouteParams = () => {
-  router.push({
-    query: {
-      page: currentPage.value,
-    }
-  });
-};
-
-const onPageChange = (event: { page: number }) => {
-  currentPage.value = event.page + 1;
-  updateRouteParams();
-};
 
 onMounted(() => {
   if (!route.query.page && !route.query.query) {
@@ -137,10 +124,6 @@ const initiateCheckout = async (transactionId: number, event?: Event) => {
   }
 };
 
-const closeDialog = () => {
-  showDetailDialog.value = false;
-};
-
 const formatDate = (month: number, year: number) => {
   const date = new Date(year, month - 1);
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -153,18 +136,6 @@ const formatAmount = (amount: number) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(amount);
-};
-
-const getInitials = (userId: number) => {
-  return `U${userId.toString().slice(-2)}`;
-};
-
-const getAvatarColor = (userId: number) => {
-  const colors = [
-    '#7986CB', '#64B5F6', '#4FC3F7', '#4DD0E1', '#4DB6AC',
-    '#81C784', '#AED581', '#DCE775', '#FFF176', '#FFD54F'
-  ];
-  return colors[userId % colors.length];
 };
 
 const getStatusIcon = (status: string) => {
@@ -187,7 +158,7 @@ const getStatusColor = (status: string) => {
         </div>
 
         <!-- Skeleton Loading -->
-        <div v-if="loading" class="space-y-3">
+        <div v-if="isLoading" class="space-y-3">
           <div v-for="(_, index) in skeletonItems" :key="index"
             class="bg-gray-800 bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow-sm backdrop-blur-sm">
             <Skeleton shape="circle" size="3rem" class="bg-gray-700"></Skeleton>
@@ -209,8 +180,8 @@ const getStatusColor = (status: string) => {
             @click="loadTransactionDetails(transaction.id)">
 
             <!-- Avatar -->
-            <Avatar :label="getInitials(transaction.userId)" class="flex-shrink-0"
-              :style="{ backgroundColor: getAvatarColor(transaction.userId) }" />
+            <Avatar :label="getInitials(`User${transaction.userId}`)" class="flex-shrink-0"
+              :style="{ backgroundColor: getRandomColor(transaction.userId) }" />
 
             <!-- Content -->
             <div class="flex-1 min-w-0">
@@ -240,7 +211,7 @@ const getStatusColor = (status: string) => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!loading && transactions.length === 0"
+        <div v-if="!isLoading && transactions.length === 0"
           class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
           <i class="pi pi-wallet text-6xl text-gray-600 mb-4"></i>
           <p class="text-lg text-gray-400">No transactions found</p>
@@ -268,8 +239,8 @@ const getStatusColor = (status: string) => {
           <div v-if="selectedTransaction && !detailsLoading" class="p-4 md:p-6">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center space-x-3">
-                <Avatar :label="getInitials(selectedTransaction.userId)" size="large"
-                  :style="{ backgroundColor: getAvatarColor(selectedTransaction.userId) }" shape="circle" />
+                <Avatar :label="getInitials(`User${selectedTransaction.userId}`)" size="large"
+                  :style="{ backgroundColor: getRandomColor(selectedTransaction.userId) }" shape="circle" />
                 <div>
                   <h2 class="text-xl font-bold text-green-400">User #{{ selectedTransaction.userId }}</h2>
                   <p class="text-sm text-gray-400">
