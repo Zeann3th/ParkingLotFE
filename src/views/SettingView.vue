@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { InputText, Button, useToast, useConfirm, ConfirmDialog } from "primevue";
 import axios from 'axios';
 import MenuLayout from '@/components/MenuLayout.vue';
 import { useAuth } from '@/composables/auth';
-import { useTheme } from '@/composables/theme';
 
 const toast = useToast();
 const confirm = useConfirm();
 
 const { email } = useAuth();
-const { theme, toggleTheme } = useTheme();
 
 const pin = ref('');
 const form = ref({
@@ -20,9 +18,6 @@ const form = ref({
 const showPasswordForm = ref(false);
 const isSubmittingRequest = ref(false);
 const isSubmittingReset = ref(false);
-
-const themeButtonIcon = computed(() => theme.value === 'light' ? 'pi pi-moon' : 'pi pi-sun');
-const themeButtonLabel = computed(() => theme.value === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
 
 const requestAndShowPasswordForm = async () => {
   isSubmittingRequest.value = true;
@@ -121,14 +116,6 @@ const handlePasswordReset = async () => {
         <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Theme Settings</h2>
         <div
           class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700 max-w-md">
-          <div class="flex items-center justify-between">
-            <span class="text-gray-700 dark:text-gray-300">Appearance</span>
-            <Button :label="themeButtonLabel" :icon="themeButtonIcon" @click="toggleTheme"
-              class="p-button-outlined p-button-sm" />
-          </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Currently in {{ theme }} mode.
-          </p>
         </div>
       </section>
 
