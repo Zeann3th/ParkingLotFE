@@ -1,5 +1,9 @@
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+
+interface PageChangeEvent {
+  page: number;
+}
 
 export function usePagination(defaultRowsPerPage = 10) {
   const route = useRoute();
@@ -12,34 +16,26 @@ export function usePagination(defaultRowsPerPage = 10) {
   const rowsPerPage = ref(defaultRowsPerPage);
   const showDetailDialog = ref(false);
 
-  const updateRouteParams = () => {
+  const updateRouteParams = (page = currentPage.value) => {
     router.push({
       query: {
         ...route.query,
-        page: currentPage.value,
+        page: page,
       },
-    });
+    }).catch(() => { });
   };
 
-  const onPageChange = (event: { page: number; }) => {
-    currentPage.value = event.page + 1;
-    updateRouteParams();
+  const onPageChange = (event: PageChangeEvent) => {
+    const newPage = event.page + 1;
+    if (newPage !== currentPage.value) {
+      currentPage.value = newPage;
+      updateRouteParams(newPage);
+    }
   };
 
   const closeDialog = () => {
     showDetailDialog.value = false;
   };
-
-  onMounted(() => {
-    if (route.query.page) {
-      const parsedPage = parseInt(route.query.page as string);
-      if (!isNaN(parsedPage)) {
-        currentPage.value = parsedPage;
-      }
-    } else {
-      updateRouteParams();
-    }
-  });
 
   return {
     // State

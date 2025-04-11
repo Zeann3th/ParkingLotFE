@@ -8,6 +8,7 @@ export interface Notification {
   message: string;
   status: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface NotificationResponse {
@@ -33,12 +34,16 @@ export type Residence = {
   id: number;
   building: string;
   room: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Vehicle = {
   id: number;
   plate: string;
   type: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Resident = {
@@ -73,6 +78,8 @@ export interface Ticket {
   status: "AVAILABLE" | "INUSE" | "LOST";
   vehicleId?: number;
   userId?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TicketResponse {
@@ -88,6 +95,8 @@ export interface Transaction {
   status: "PENDING" | "PAID";
   month: number;
   year: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TransactionResponse {
