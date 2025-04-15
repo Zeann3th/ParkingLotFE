@@ -34,6 +34,8 @@ export type Residence = {
   id: number;
   building: string;
   room: number;
+  vehicles?: Vehicle[];
+  residents?: Resident[];
   createdAt: string;
   updatedAt: string;
 };
@@ -49,14 +51,6 @@ export type Vehicle = {
 export type Resident = {
   id: number;
   name: string;
-};
-
-export type ResidenceDetail = {
-  id: number;
-  building: string;
-  room: number;
-  vehicles: Vehicle[];
-  residents: Resident[];
 };
 
 export interface ResidenceResponse {

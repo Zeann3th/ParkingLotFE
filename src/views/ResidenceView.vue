@@ -1,39 +1,28 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type Ref } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Dialog, Button, useToast } from 'primevue';
 import Skeleton from '@/components/Skeleton.vue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-import type { Residence, ResidenceDetail } from '@/types';
+import type { Residence } from '@/types';
 import { residenceService } from '@/services/residence.service';
 import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import Title from '@/components/Title.vue';
+import { useState } from '@/composables/state';
 
-const isLoading = ref(false);
-const isMutated = ref(false);
-const showDetailDialog = ref(false);
-const closeDialog = () => {
-  showDetailDialog.value = false;
-  selectedResidence.value = null;
-};
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-const totalPages = ref(0);
+const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Residence>();
 const { role } = useAuth();
-const residences: Ref<Residence[]> = ref([]);
-const selectedResidence = ref<ResidenceDetail | null>(null);
-const detailsLoading = ref(false);
 const toast = useToast();
 const route = useRoute();
 
 const getAllResidences = async () => {
   isLoading.value = true;
   try {
-    const response = await residenceService.getAll(currentPage.value, rowsPerPage.value, { cache: isMutated.value });
-    residences.value = response.data;
-    totalPages.value = response.count;
+    const response = await residenceService.getAll(page.value, limit.value, { cache: isMutated.value });
+    itemList.value = response.data;
+    maxPage.value = response.count;
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load residences', life: 3000, });
   } finally {
@@ -42,17 +31,17 @@ const getAllResidences = async () => {
 };
 
 watch(() => route.query, (newQuery) => {
-  currentPage.value = parseInt(newQuery.page as string) || 1;
+  page.value = parseInt(newQuery.page as string) || 1;
   getAllResidences();
 }, { immediate: true });
 
 const getResidenceDetail = async (id: number) => {
-  detailsLoading.value = true;
-  showDetailDialog.value = true;
+  isDetailLoading.value = true;
+  openDialog("view")
 
   try {
     const response = await residenceService.getById(id);
-    selectedResidence.value = response;
+    selectedItem.value = response;
   } catch (error) {
     console.error('Error fetching residence details:', error);
     toast.add({
@@ -62,7 +51,7 @@ const getResidenceDetail = async (id: number) => {
       life: 3000,
     });
   } finally {
-    detailsLoading.value = false;
+    isDetailLoading.value = false;
   }
 };
 
@@ -111,7 +100,7 @@ const getVehicleTypeIcon = (type: string) => {
 
         <!-- Residences Grid -->
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div v-for="residence in residences" :key="residence.id"
+          <div v-for="residence in itemList" :key="residence.id"
             class="bg-gray-800 bg-opacity-80 hover:bg-gray-700 hover:bg-opacity-90 transition-all duration-200 rounded-lg shadow-sm p-4 cursor-pointer border border-gray-700 backdrop-blur-sm"
             @click="getResidenceDetail(residence.id)">
             <div class="flex justify-between items-start mb-2">
@@ -126,15 +115,15 @@ const getVehicleTypeIcon = (type: string) => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!isLoading && residences.length === 0">
+        <div v-if="!isLoading && itemList.length === 0">
           <EmptyMessage message="No Residences Found." icon="pi pi-building" @click="getAllResidences" />
         </div>
 
         <!-- Residence Detail Dialog -->
-        <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false"
+        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
           class="bg-gray-800 bg-opacity-90 text-gray-100 border border-gray-700 rounded-lg shadow-lg backdrop-blur-sm"
           :style="{ width: '90%', maxWidth: '600px' }">
-          <div v-if="selectedResidence && !detailsLoading" class="p-4 md:p-6">
+          <div v-if="selectedItem && !isDetailLoading" class="p-4 md:p-6">
             <div class="mb-6">
               <h2 class="text-xl font-bold border-b border-gray-700 pb-2 text-green-400">Residence Details</h2>
             </div>
@@ -142,28 +131,28 @@ const getVehicleTypeIcon = (type: string) => {
             <div class="space-y-4">
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-400">ID</span>
-                <span class="font-medium text-gray-100">{{ selectedResidence.id }}</span>
+                <span class="font-medium text-gray-100">{{ selectedItem.id }}</span>
               </div>
 
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-400">Building</span>
                 <div class="flex items-center">
-                  <span class="font-medium text-gray-100 mr-2">{{ selectedResidence.building }}</span>
-                  <span class="text-xs px-2 py-1 rounded-full" :class="getBuildingColor(selectedResidence.building)">
-                    {{ selectedResidence.building }}
+                  <span class="font-medium text-gray-100 mr-2">{{ selectedItem.building }}</span>
+                  <span class="text-xs px-2 py-1 rounded-full" :class="getBuildingColor(selectedItem.building)">
+                    {{ selectedItem.building }}
                   </span>
                 </div>
               </div>
 
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-400">Room</span>
-                <span class="font-medium text-gray-100">{{ selectedResidence.room }}</span>
+                <span class="font-medium text-gray-100">{{ selectedItem.room }}</span>
               </div>
 
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-400">Residents</span>
-                <div v-if="selectedResidence.residents.length > 0" class="mt-1">
-                  <div v-for="resident in selectedResidence.residents" :key="resident.id"
+                <div v-if="selectedItem.residents?.length" class="mt-1">
+                  <div v-for="resident in selectedItem.residents" :key="resident.id"
                     class="flex items-center px-3 py-2 mb-1 rounded-md bg-gray-700 bg-opacity-50">
                     <i class="pi pi-user mr-2 text-green-400"></i>
                     <span class="font-medium text-gray-100">{{ resident.name }}</span>
@@ -174,8 +163,8 @@ const getVehicleTypeIcon = (type: string) => {
 
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-400">Vehicles</span>
-                <div v-if="selectedResidence.vehicles.length > 0" class="mt-1">
-                  <div v-for="vehicle in selectedResidence.vehicles" :key="vehicle.id"
+                <div v-if="selectedItem.vehicles?.length" class="mt-1">
+                  <div v-for="vehicle in selectedItem.vehicles" :key="vehicle.id"
                     class="flex items-center px-3 py-2 mb-1 rounded-md bg-gray-700 bg-opacity-50">
                     <i :class="[getVehicleTypeIcon(vehicle.type), 'mr-2 text-green-400']"></i>
                     <div class="flex flex-col">
@@ -191,13 +180,13 @@ const getVehicleTypeIcon = (type: string) => {
             <div class="flex justify-end mt-6 space-x-3">
               <Button v-if="isAdmin" label="Edit" icon="pi pi-pencil"
                 class="p-button-outlined text-gray-300 hover:text-gray-100 border-gray-600 hover:border-gray-500" />
-              <Button label="Close" @click="closeDialog"
+              <Button label="Close" @click="closeDialog('view')"
                 class="p-button-outlined text-gray-300 hover:text-gray-100 border-gray-600 hover:border-gray-500" />
             </div>
           </div>
 
           <!-- Loading state in dialog -->
-          <div v-if="detailsLoading" class="p-4 space-y-4">
+          <div v-if="isDetailLoading" class="p-4 space-y-4">
             <Skeleton width="60%" height="2rem" class="mb-6 bg-gray-700" />
             <Skeleton width="100%" height="1.5rem" class="mb-2 bg-gray-700" />
             <Skeleton width="80%" height="1.5rem" class="mb-2 bg-gray-700" />

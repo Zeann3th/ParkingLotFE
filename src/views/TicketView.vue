@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type Ref } from 'vue';
+import { computed, watch } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Dialog, Button, useToast } from 'primevue';
 import { useRoute } from 'vue-router';
@@ -9,30 +9,19 @@ import { ticketService } from '@/services/ticket.service';
 import Skeleton from '@/components/Skeleton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import FloatingButton from '@/components/FloatingButton.vue';
+import { useState } from '@/composables/state';
 
-const isLoading = ref(false);
-const isMutated = ref(false);
-const showDetailDialog = ref(false);
-const closeDialog = () => {
-  showDetailDialog.value = false;
-  selectedTicket.value = null;
-};
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-const totalPages = ref(0);
+const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>();
 const { role } = useAuth();
-const tickets: Ref<Ticket[]> = ref([]);
-const selectedTicket = ref<Ticket | null>(null);
-const detailsLoading = ref(false);
 const toast = useToast();
 const route = useRoute();
 
 const getAllTickets = async () => {
   isLoading.value = true;
   try {
-    const response = await ticketService.getAll(currentPage.value, rowsPerPage.value, { cache: isMutated.value });
-    tickets.value = response.data;
-    totalPages.value = response.count;
+    const response = await ticketService.getAll(page.value, limit.value, { cache: isMutated.value });
+    itemList.value = response.data;
+    maxPage.value = response.count;
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load tickets', life: 3000, });
   } finally {
@@ -41,27 +30,24 @@ const getAllTickets = async () => {
 };
 
 watch(() => route.query, (newQuery) => {
-  currentPage.value = parseInt(newQuery.page as string) || 1;
+  page.value = parseInt(newQuery.page as string) || 1;
   getAllTickets();
 }, { immediate: true });
 
 const getTicketDetail = async (id: number) => {
-  detailsLoading.value = true;
-  showDetailDialog.value = true;
+  isDetailLoading.value = true;
+  openDialog("view");
 
   try {
     const response = await ticketService.getById(id);
-    selectedTicket.value = response;
+    selectedItem.value = response;
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load ticket details', life: 3000, });
-    showDetailDialog.value = false;
+    closeDialog("view");
   } finally {
-    detailsLoading.value = false;
+    isDetailLoading.value = false;
   }
 };
-
-onMounted(() => {
-});
 
 const isAdmin = computed(() => role.value === 'ADMIN');
 
@@ -117,8 +103,9 @@ const getTypeLabel = (type: string) => {
         <Skeleton v-if="isLoading" />
 
         <!-- Tickets Grid -->
-        <div v-else-if="tickets.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div v-for="ticket in tickets" :key="ticket.id"
+        <div v-else-if="itemList.length > 0"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div v-for="ticket in itemList" :key="ticket.id"
             class="card-themed p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:hover:shadow-gray-800/40"
             @click="getTicketDetail(ticket.id)" role="button" :aria-label="`View details for ticket ${ticket.title}`">
             <div class="flex justify-between items-start mb-2 gap-2">
@@ -142,53 +129,53 @@ const getTypeLabel = (type: string) => {
         </div>
 
         <!-- Ticket Detail Dialog -->
-        <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false" class="dialog-themed"
+        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false" class="dialog-themed"
           :style="{ width: '90%', maxWidth: '550px' }">
-          <div v-if="selectedTicket && !detailsLoading" class="p-4 md:p-6">
+          <div v-if="selectedItem && !isDetailLoading" class="p-4 md:p-6">
             <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
               <h2 class="text-xl font-bold text-green-600 dark:text-green-400">Ticket Details</h2>
               <Button icon="pi pi-times" class="p-button-text p-button-rounded modal-close-button"
-                @click="closeDialog" />
+                @click="closeDialog('view')" />
             </div>
 
             <div class="space-y-4">
               <div class="detail-item">
                 <span class="detail-label">ID</span>
-                <span class="detail-value">{{ selectedTicket.id }}</span>
+                <span class="detail-value">{{ selectedItem.id }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Title</span>
-                <span class="detail-value">{{ selectedTicket.title }}</span>
+                <span class="detail-value">{{ selectedItem.title }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Type</span>
-                <span class="detail-value">{{ getTypeLabel(selectedTicket.type) }}</span>
+                <span class="detail-value">{{ getTypeLabel(selectedItem.type) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Status</span>
-                <span class="font-medium" :class="getStatusTextClass(selectedTicket.status)">{{ selectedTicket.status
+                <span class="font-medium" :class="getStatusTextClass(selectedItem.status)">{{ selectedItem.status
                 }}</span>
               </div>
-              <div v-if="selectedTicket.vehicleId" class="detail-item">
+              <div v-if="selectedItem.vehicleId" class="detail-item">
                 <span class="detail-label">Vehicle ID</span>
-                <RouterLink v-if="isAdmin" :to="`/vehicles?id=${selectedTicket.vehicleId}`" class="detail-link">
-                  {{ selectedTicket.vehicleId }} <i class="pi pi-external-link ml-1 text-xs"></i>
+                <RouterLink v-if="isAdmin" :to="`/vehicles?id=${selectedItem.vehicleId}`" class="detail-link">
+                  {{ selectedItem.vehicleId }} <i class="pi pi-external-link ml-1 text-xs"></i>
                 </RouterLink>
-                <span v-else class="detail-value">{{ selectedTicket.vehicleId }}</span>
+                <span v-else class="detail-value">{{ selectedItem.vehicleId }}</span>
               </div>
-              <div v-if="selectedTicket.userId" class="detail-item">
+              <div v-if="selectedItem.userId" class="detail-item">
                 <span class="detail-label">User ID</span>
-                <span class="detail-value">{{ selectedTicket.userId }}</span>
+                <span class="detail-value">{{ selectedItem.userId }}</span>
               </div>
             </div>
 
             <div class="flex justify-end mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 space-x-3">
               <Button v-if="isAdmin" label="Edit" icon="pi pi-pencil" class="p-button-outlined" />
-              <Button label="Close" @click="closeDialog" class="p-button-text" />
+              <Button label="Close" @click="closeDialog('view')" class="p-button-text" />
             </div>
           </div>
 
-          <div v-if="detailsLoading" class="p-4 md:p-6 space-y-4">
+          <div v-if="isDetailLoading" class="p-4 md:p-6 space-y-4">
             <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
               <Skeleton width="40%" height="1.8rem" />
               <Skeleton shape="circle" size="2rem" />

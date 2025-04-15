@@ -3,7 +3,9 @@ import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Dialog from 'primevue/dialog';
 import Avatar from 'primevue/avatar';
-import Skeleton from 'primevue/skeleton';
+import Skeleton from '@/components/Skeleton.vue';
+import Title from '@/components/Title.vue';
+import EmptyMessage from '@/components/EmptyMessage.vue';
 import Button from 'primevue/button';
 import { memoryStorage } from '@/storage';
 import { useToast } from 'primevue';
@@ -27,12 +29,11 @@ const selectedTransaction = ref<Transaction | null>(null);
 const detailsLoading = ref<boolean>(false);
 const processingCheckout = ref<boolean>(false);
 const toast = useToast();
-const skeletonItems = Array(5).fill({});
 const route = useRoute();
 
 console.log(isLoading, isMutated);
 
-const fetchTransactions = async () => {
+const getAllTransactions = async () => {
   isLoading.value = true;
   try {
     const response = await axios.get<TransactionResponse>('/transactions', {
@@ -60,13 +61,13 @@ const fetchTransactions = async () => {
 
 watch(() => route.query, (newQuery) => {
   currentPage.value = parseInt(newQuery.page as string) || 1;
-  fetchTransactions();
+  getAllTransactions();
 }, { immediate: true });
 
 onMounted(() => {
 });
 
-const loadTransactionDetails = async (id: number) => {
+const getTransactionDetails = async (id: number) => {
   detailsLoading.value = true;
   showDetailDialog.value = true;
 
@@ -89,7 +90,7 @@ const loadTransactionDetails = async (id: number) => {
   }
 };
 
-const initiateCheckout = async (transactionId: number, event?: Event) => {
+const checkout = async (transactionId: number, event?: Event) => {
   if (event) {
     event.stopPropagation();
     event.preventDefault();
@@ -112,7 +113,7 @@ const initiateCheckout = async (transactionId: number, event?: Event) => {
         detail: 'Redirecting to payment gateway...',
         life: 3000,
       });
-      setTimeout(fetchTransactions, 2000);
+      setTimeout(getAllTransactions, 2000);
     }
   } catch (error) {
     toast.add({
@@ -153,33 +154,16 @@ const getStatusColor = (status: string) => {
   <MenuLayout>
     <div class="min-h-screen bg-gray-900 p-4 md:p-6 text-gray-100">
       <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-2xl font-bold text-green-400">Transaction History</h1>
-          <Button icon="pi pi-refresh" class="p-button-text text-gray-400 hover:text-green-400"
-            @click="fetchTransactions" />
-        </div>
+        <Title name="Transactions" @click="getAllTransactions" />
 
         <!-- Skeleton Loading -->
-        <div v-if="isLoading" class="space-y-3">
-          <div v-for="(_, index) in skeletonItems" :key="index"
-            class="bg-gray-800 bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow-sm backdrop-blur-sm">
-            <Skeleton shape="circle" size="3rem" class="bg-gray-700"></Skeleton>
-            <div class="flex-1">
-              <div class="flex justify-between mb-2">
-                <Skeleton width="30%" height="1.2rem" class="bg-gray-700"></Skeleton>
-                <Skeleton width="20%" height="1rem" class="bg-gray-700"></Skeleton>
-              </div>
-              <Skeleton width="90%" height="1rem" class="mb-2 bg-gray-700"></Skeleton>
-              <Skeleton width="75%" height="1rem" class="bg-gray-700"></Skeleton>
-            </div>
-          </div>
-        </div>
+        <Skeleton v-if="isLoading" />
 
         <!-- Transactions List -->
         <div v-else class="space-y-3">
           <div v-for="transaction in transactions" :key="transaction.id"
             class="bg-gray-800 bg-opacity-80 hover:bg-gray-700 hover:bg-opacity-90 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 cursor-pointer shadow-sm border border-gray-700 backdrop-blur-sm"
-            @click="loadTransactionDetails(transaction.id)">
+            @click="getTransactionDetails(transaction.id)">
 
             <!-- Avatar -->
             <Avatar :label="getInitials(`User${transaction.userId}`)" class="flex-shrink-0"
@@ -206,19 +190,15 @@ const getStatusColor = (status: string) => {
                 </div>
                 <Button v-if="transaction.status === 'PENDING'" label="Pay Now" icon="pi pi-credit-card"
                   class="p-button-sm bg-green-600 hover:bg-green-700 border-green-600"
-                  @click.stop="initiateCheckout(transaction.id, $event)" />
+                  @click.stop="checkout(transaction.id, $event)" />
               </div>
             </div>
           </div>
         </div>
 
         <!-- Empty State -->
-        <div v-if="!isLoading && transactions.length === 0"
-          class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
-          <i class="pi pi-wallet text-6xl text-gray-600 mb-4"></i>
-          <p class="text-lg text-gray-400">No transactions found</p>
-          <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
-            @click="fetchTransactions" />
+        <div v-if="!isLoading && transactions.length === 0">
+          <EmptyMessage message="No transactions found" icon="pi pi-exclamation-triangle" @click="getAllTransactions" />
         </div>
 
         <!-- Transaction Detail Dialog -->
@@ -275,7 +255,7 @@ const getStatusColor = (status: string) => {
             <div class="flex justify-end mt-6 space-x-3">
               <Button v-if="selectedTransaction.status === 'PENDING'" label="Proceed to Payment"
                 icon="pi pi-credit-card" class="bg-green-600 hover:bg-green-700 border-green-600"
-                :loading="processingCheckout" @click="initiateCheckout(selectedTransaction.id)" />
+                :loading="processingCheckout" @click="checkout(selectedTransaction.id)" />
               <Button label="Close" @click="closeDialog"
                 class="p-button-outlined text-gray-300 hover:text-gray-100 border-gray-600 hover:border-gray-500" />
             </div>

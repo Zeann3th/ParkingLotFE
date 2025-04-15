@@ -14,11 +14,11 @@ const toggle = (event: Event) => menu.value.toggle(event);
 </script>
 
 <template>
-  <div class="bg-gray-900 min-h-screen flex flex-col">
-    <Menubar :model="items" class="bg-gray-800 border-b border-gray-700">
+  <div class="bg-secondary dark:bg-primary min-h-screen flex flex-col">
+    <Menubar :model="items">
       <template #item="{ item }">
         <RouterLink v-if="item.url" :to="item.url">
-          <div class="flex items-center space-x-2 m-2 text-gray-300 hover:text-green-400">
+          <div class="flex items-center space-x-2 m-2 text-secondary hover:text-secondary/80">
             <span :class="item.icon" />
             <span>{{ item.label }}</span>
           </div>
@@ -32,7 +32,7 @@ const toggle = (event: Event) => menu.value.toggle(event);
         <Menu ref="menu" id="profile" :model="userProfile" :popup="true">
           <template #item="{ item }">
             <RouterLink v-if="item.url" :to="item.url">
-              <div class="flex items-center space-x-2 m-2 text-gray-300 hover:text-green-400">
+              <div class="flex items-center space-x-2 m-2  text-secondary  hover:text-secondary/80">
                 <span :class="item.icon" />
                 <span>{{ item.label }}</span>
               </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
+import { Button } from 'primevue';
 defineProps({
   icon: {
     type: String,
@@ -10,9 +11,9 @@ defineEmits(['click']);
 </script>
 
 <template>
-  <button class="floating-btn bg-green-600 hover:bg-green-700 text-white shadow-lg" @click="$emit('click')">
+  <Button class="floating-btn shadow-lg" @click="$emit('click')">
     {{ icon }}
-  </button>
+  </Button>
 </template>
 
 <style scoped>

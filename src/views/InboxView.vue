@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type Ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Dialog, Avatar, Skeleton, Button, InputText, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
 import { useRoute } from 'vue-router';
@@ -10,22 +10,10 @@ import { formatDate, getInitials, getRandomColor, truncateStr } from '@/utils';
 import Title from '@/components/Title.vue';
 import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
+import { useState } from '@/composables/state';
 
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-const totalPages = ref(0);
-const isLoading = ref(false);
-const isMutated = ref(false);
-const closeDialog = () => {
-  showDetailDialog.value = false;
-  selectedNotification.value = null;
-};
-const showDetailDialog = ref(false);
+const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Notification>();
 const { role } = useAuth();
-const notifications: Ref<Notification[]> = ref([]);
-const selectedNotification = ref<Notification | null>(null);
-const isDetailLoading = ref(false);
-const showNewNotificationDialog = ref<boolean>(false);
 const toast = useToast();
 const route = useRoute();
 const confirm = useConfirm();
@@ -38,12 +26,12 @@ const newNotification = ref({
 const getAllNotifications = async () => {
   isLoading.value = true;
   try {
-    const response = await notificationService.getAll(currentPage.value, rowsPerPage.value, { cache: isMutated.value });
+    const response = await notificationService.getAll(page.value, limit.value, { cache: isMutated.value });
     if (response.message) {
       toast.add({ severity: 'error', summary: 'Error', detail: response.message, life: 3000, });
     } else {
-      notifications.value = response.data;
-      totalPages.value = response.count;
+      itemList.value = response.data;
+      maxPage.value = response.count;
     }
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load notifications', life: 3000, });
@@ -53,17 +41,17 @@ const getAllNotifications = async () => {
 };
 
 watch(() => route.query, (newQuery) => {
-  currentPage.value = parseInt(newQuery.page as string) || 1;
+  page.value = parseInt(newQuery.page as string) || 1;
   getAllNotifications();
 }, { immediate: true });
 
 const getNotificationDetail = async (id: number) => {
   isDetailLoading.value = true;
-  showDetailDialog.value = true;
+  openDialog("view");
 
   try {
     const response = await notificationService.getById(id);
-    selectedNotification.value = response;
+    selectedItem.value = response;
 
     if (response.status === 'PENDING') {
       readNotification(id);
@@ -108,7 +96,7 @@ const deleteNotification = (id: number) => {
 };
 
 const openNewNotificationDialog = () => {
-  showNewNotificationDialog.value = true;
+  openDialog("create");
   newNotification.value = {
     to: '',
     message: ''
@@ -134,27 +122,23 @@ const sendNotification = async () => {
     }
     await notificationService.create(payload.message, payload.to);
     newNotification.value = { to: '', message: '' };
-    showNewNotificationDialog.value = false;
+    closeDialog('create');
     isMutated.value = true;
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to send notification', life: 3000, });
   }
 };
 
-onMounted(() => {
-});
-
 const isAdmin = computed(() => role.value === 'ADMIN');
 
 const cancelNewNotification = () => {
   newNotification.value = { to: '', message: '' };
-  showNewNotificationDialog.value = false;
+  closeDialog('create');
 };
 </script>
 
 <template>
   <MenuLayout>
-    <!-- Base theme classes -->
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6 text-gray-800 dark:text-gray-100">
       <div class="max-w-4xl mx-auto">
         <Title name="Notifications" @click="getAllNotifications" />
@@ -164,7 +148,7 @@ const cancelNewNotification = () => {
 
         <!-- Notifications List -->
         <div v-else class="space-y-3">
-          <div v-for="notification in notifications" :key="notification.id" :class="[
+          <div v-for="notification in itemList" :key="notification.id" :class="[
             'bg-white dark:bg-gray-800 dark:bg-opacity-80 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-opacity-90 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 shadow border dark:backdrop-blur-sm',
             notification.status === 'READ'
               ? 'border-gray-200 dark:border-gray-700 opacity-80 dark:opacity-70'
@@ -203,25 +187,25 @@ const cancelNewNotification = () => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!isLoading && notifications.length === 0">
+        <div v-if="!isLoading && itemList.length === 0">
           <EmptyMessage icon="pi pi-bell" message="No Notifications Found" @click="getAllNotifications" />
         </div>
 
         <!-- Notification Detail Dialog -->
-        <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false" # Apply theme classes here
+        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
           class="dialog-themed bg-white dark:bg-gray-800 dark:bg-opacity-90 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg dark:backdrop-blur-sm"
           :style="{ width: '90%', maxWidth: '600px' }">
 
           <!-- Detail Content -->
-          <div v-if="selectedNotification && !isDetailLoading" class="p-4 md:p-6">
+          <div v-if="selectedItem && !isDetailLoading" class="p-4 md:p-6">
             <div class="mb-6">
               <div class="flex items-center space-x-3">
-                <Avatar :label="getInitials(selectedNotification.from.name)" class="flex-shrink-0" size="large"
-                  :style="{ backgroundColor: getRandomColor(selectedNotification.from.id), color: '#fff' }" />
+                <Avatar :label="getInitials(selectedItem.from.name)" class="flex-shrink-0" size="large"
+                  :style="{ backgroundColor: getRandomColor(selectedItem.from.id), color: '#fff' }" />
                 <div>
-                  <h2 class="text-xl font-bold text-green-600 dark:text-green-400">{{ selectedNotification.from.name }}
+                  <h2 class="text-xl font-bold text-green-600 dark:text-green-400">{{ selectedItem.from.name }}
                   </h2>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">@{{ selectedNotification.from.username }}</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">@{{ selectedItem.from.username }}</p>
                 </div>
               </div>
             </div>
@@ -229,7 +213,7 @@ const cancelNewNotification = () => {
             <div class="space-y-4">
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-500 dark:text-gray-400">Date</span>
-                <span class="font-medium text-gray-800 dark:text-gray-100">{{ formatDate(selectedNotification.createdAt)
+                <span class="font-medium text-gray-800 dark:text-gray-100">{{ formatDate(selectedItem.createdAt)
                 }}</span>
               </div>
 
@@ -237,18 +221,18 @@ const cancelNewNotification = () => {
                 <span class="text-sm text-gray-500 dark:text-gray-400">Status</span>
                 <span :class="[
                   'inline-block px-2 py-1 text-xs rounded-full',
-                  selectedNotification.status === 'READ'
+                  selectedItem.status === 'READ'
                     ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                     : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                 ]">
-                  {{ selectedNotification.status }}
+                  {{ selectedItem.status }}
                 </span>
               </div>
 
               <div class="flex flex-col space-y-1">
                 <span class="text-sm text-gray-500 dark:text-gray-400">Message</span>
                 <span class="font-medium text-gray-800 dark:text-gray-100 whitespace-pre-line">{{
-                  selectedNotification.message
+                  selectedItem.message
                 }}</span>
               </div>
             </div>
@@ -259,8 +243,8 @@ const cancelNewNotification = () => {
                 class="p-button-outlined text-gray-700 dark:text-gray-300 border-gray-400 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700" />
               <Button v-if="isAdmin" icon="pi pi-trash" label="Delete"
                 class="p-button-outlined p-button-danger text-red-600 dark:text-red-300 border-red-400 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/50"
-                @click="deleteNotification(selectedNotification.id)" />
-              <Button label="Close" @click="closeDialog"
+                @click="deleteNotification(selectedItem.id)" />
+              <Button label="Close" @click="closeDialog('view')"
                 class="p-button-outlined text-gray-700 dark:text-gray-300 border-gray-400 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700" />
             </div>
           </div>
@@ -286,8 +270,7 @@ const cancelNewNotification = () => {
         </Dialog>
 
         <!-- New Notification Dialog -->
-        <Dialog v-model:visible="showNewNotificationDialog" modal header="Create New Notification" # Apply theme classes
-          here
+        <Dialog v-model:visible="dialogs.create" modal header="Create New Notification" # Apply theme classes here
           class="dialog-themed bg-white dark:bg-gray-800 dark:bg-opacity-90 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg dark:backdrop-blur-sm"
           :style="{ width: '90%', maxWidth: '500px' }">
 
@@ -399,7 +382,6 @@ const cancelNewNotification = () => {
   /* Very light green bg */
 }
 
-/* Theme input/textarea directly or add class + :deep */
 :deep(.input-themed),
 :deep(.p-inputtext) {
   background-color: #fff;
@@ -425,12 +407,9 @@ const cancelNewNotification = () => {
 :deep(.textarea-themed:focus),
 :deep(.p-textarea:focus) {
   border-color: #10b981;
-  /* Green focus */
   box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.2);
-  /* Green focus ring */
 }
 
-/* Input/Textarea placeholder color */
 :deep(.input-themed::placeholder),
 :deep(.p-inputtext::placeholder),
 :deep(.textarea-themed::placeholder),
