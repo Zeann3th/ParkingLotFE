@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
-import { Skeleton, Dialog, Button, Paginator, useToast } from 'primevue';
+import { Dialog, Button, useToast } from 'primevue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Ticket } from '@/types';
 import { ticketService } from '@/services/ticket.service';
-import { usePagination } from '@/composables/pagination';
+import Skeleton from '@/components/Skeleton.vue';
+import EmptyMessage from '@/components/EmptyMessage.vue';
+import FloatingButton from '@/components/FloatingButton.vue';
 
-const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
-  closeDialog, showDetailDialog } = usePagination();
-
+const isLoading = ref(false);
+const isMutated = ref(false);
+const showDetailDialog = ref(false);
+const closeDialog = () => {
+  showDetailDialog.value = false;
+  selectedTicket.value = null;
+};
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+const totalPages = ref(0);
 const { role } = useAuth();
 const tickets: Ref<Ticket[]> = ref([]);
 const selectedTicket = ref<Ticket | null>(null);
@@ -52,9 +61,6 @@ const getTicketDetail = async (id: number) => {
 };
 
 onMounted(() => {
-  if (!route.query.page) {
-    updateRouteParams();
-  }
 });
 
 const isAdmin = computed(() => role.value === 'ADMIN');
@@ -108,16 +114,7 @@ const getTypeLabel = (type: string) => {
         </div>
 
         <!-- Skeleton Loading -->
-        <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div v-for="n in 8" :key="`skel-${n}`" class="card-themed-skeleton p-4">
-            <Skeleton width="60%" height="1.5rem" class="mb-2" />
-            <div class="flex justify-between">
-              <Skeleton width="40%" height="1rem" class="mb-1" />
-              <Skeleton width="30%" height="1rem" class="mb-1 rounded-full" />
-            </div>
-            <Skeleton width="30%" height="0.8rem" class="mt-2" />
-          </div>
-        </div>
+        <Skeleton v-if="isLoading" />
 
         <!-- Tickets Grid -->
         <div v-else-if="tickets.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -140,26 +137,9 @@ const getTypeLabel = (type: string) => {
         </div>
 
         <!-- Empty State -->
-        <div v-else
-          class="text-center py-16 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700/50">
-          <i class="pi pi-ticket text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
-          <p class="text-lg text-gray-500 dark:text-gray-400 mb-6">No tickets found</p>
-          <Button label="Refresh" icon="pi pi-refresh"
-            class="bg-green-600 hover:bg-green-700 border-green-600 text-white px-5 py-2.5" @click="getAllTickets" />
+        <div v-else>
+          <EmptyMessage message="No Tickets Found." @click="getAllTickets" />
         </div>
-
-        <!-- Pagination -->
-        <div v-if="!isLoading && tickets.length > 0 && totalPages > 1" class="mt-6 flex justify-center">
-          <Paginator :rows="rowsPerPage" :totalRecords="totalPages * rowsPerPage"
-            :first="(currentPage - 1) * rowsPerPage" @page="onPageChange($event)" :rowsPerPageOptions="[]"
-            template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink" class="paginator-themed">
-            <template #start>
-              <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages
-              }}</span>
-            </template>
-          </Paginator>
-        </div>
-
 
         <!-- Ticket Detail Dialog -->
         <Dialog v-model:visible="showDetailDialog" modal :closable="true" :showHeader="false" class="dialog-themed"
@@ -228,10 +208,7 @@ const getTypeLabel = (type: string) => {
       </div>
     </div>
 
-    <button v-if="isAdmin" @click="() => { /* TODO: Implement add new ticket action */ }"
-      class="floating-btn bg-green-600 hover:bg-green-700 text-white shadow-lg" aria-label="Add New Ticket">
-      <i class="pi pi-plus"></i>
-    </button>
+    <FloatingButton v-if="isAdmin" icon="+" @click="() => console.log('Clicked')" />
   </MenuLayout>
 </template>
 
@@ -296,25 +273,6 @@ html.dark .card-themed {
   background-color: var(--surface-section) !important;
   opacity: 0.7;
   background-image: linear-gradient(90deg, var(--surface-section) 0%, var(--surface-hover) 50%, var(--surface-section) 100%) !important;
-}
-
-.floating-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  transition: all 0.2s ease;
-  z-index: 99;
-}
-
-.floating-btn i {
-  line-height: 1;
 }
 
 :deep(.dialog-themed.p-dialog) {

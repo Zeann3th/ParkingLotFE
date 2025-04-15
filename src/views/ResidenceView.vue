@@ -1,16 +1,26 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
-import { Skeleton, Dialog, Button, Paginator, useToast } from 'primevue';
+import { Dialog, Button, useToast } from 'primevue';
+import Skeleton from '@/components/Skeleton.vue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Residence, ResidenceDetail } from '@/types';
 import { residenceService } from '@/services/residence.service';
-import { usePagination } from '@/composables/pagination';
+import FloatingButton from '@/components/FloatingButton.vue';
+import EmptyMessage from '@/components/EmptyMessage.vue';
+import Title from '@/components/Title.vue';
 
-const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
-  closeDialog, showDetailDialog } = usePagination();
-
+const isLoading = ref(false);
+const isMutated = ref(false);
+const showDetailDialog = ref(false);
+const closeDialog = () => {
+  showDetailDialog.value = false;
+  selectedResidence.value = null;
+};
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+const totalPages = ref(0);
 const { role } = useAuth();
 const residences: Ref<Residence[]> = ref([]);
 const selectedResidence = ref<ResidenceDetail | null>(null);
@@ -57,9 +67,6 @@ const getResidenceDetail = async (id: number) => {
 };
 
 onMounted(() => {
-  if (!route.query.page) {
-    updateRouteParams();
-  }
 });
 
 const isAdmin = computed(() => role.value === 'ADMIN');
@@ -97,22 +104,10 @@ const getVehicleTypeIcon = (type: string) => {
   <MenuLayout>
     <div class="min-h-screen bg-gray-900 p-4 md:p-6 text-gray-100">
       <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-2xl md:text-3xl font-bold text-green-400">Residences</h1>
-          <Button icon="pi pi-refresh" class="p-button-text text-gray-400 hover:text-green-400"
-            @click="getAllResidences" />
-        </div>
+        <Title name="Residences" @click="getAllResidences" />
 
         <!-- Skeleton Loading -->
-        <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div v-for="n in 12" :key="n" class="bg-gray-800 bg-opacity-80 rounded-lg shadow p-4 backdrop-blur-sm">
-            <Skeleton width="40%" height="2rem" class="mb-2 bg-gray-700" />
-            <div class="flex space-x-6">
-              <Skeleton width="30%" height="1rem" class="mb-1 bg-gray-700" />
-              <Skeleton width="30%" height="1rem" class="mb-1 bg-gray-700" />
-            </div>
-          </div>
-        </div>
+        <Skeleton v-if="isLoading" />
 
         <!-- Residences Grid -->
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -131,23 +126,8 @@ const getVehicleTypeIcon = (type: string) => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!isLoading && residences.length === 0"
-          class="text-center py-12 bg-gray-800 bg-opacity-80 rounded-lg shadow-sm backdrop-blur-sm">
-          <i class="pi pi-building text-6xl text-gray-600 mb-4"></i>
-          <p class="text-lg text-gray-400">No residences found</p>
-          <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
-            @click="getAllResidences" />
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-6 flex justify-center">
-          <Paginator :rows="1" :totalRecords="totalPages" :first="currentPage - 1" @page="onPageChange"
-            :rowsPerPageOptions="[]" template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
-            class="bg-gray-800 bg-opacity-80 border border-gray-700 rounded-lg shadow-sm backdrop-blur-sm">
-            <template #start>
-              <span class="text-sm text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages }}</span>
-            </template>
-          </Paginator>
+        <div v-if="!isLoading && residences.length === 0">
+          <EmptyMessage message="No Residences Found." icon="pi pi-building" @click="getAllResidences" />
         </div>
 
         <!-- Residence Detail Dialog -->
@@ -231,27 +211,11 @@ const getVehicleTypeIcon = (type: string) => {
       </div>
     </div>
 
-    <button v-if="isAdmin" class="floating-btn bg-green-600 hover:bg-green-700 text-white shadow-lg">
-      +
-    </button>
+    <FloatingButton v-if="isAdmin" icon="+" @click="() => console.log('Clicked')" />
   </MenuLayout>
 </template>
 
 <style scoped>
-.floating-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  transition: all 0.2s ease;
-}
-
 :deep(.p-dialog-content) {
   background-color: rgba(31, 41, 55, 0.9);
   border-radius: 0.5rem;

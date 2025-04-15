@@ -5,18 +5,23 @@ import Dialog from 'primevue/dialog';
 import Avatar from 'primevue/avatar';
 import Skeleton from 'primevue/skeleton';
 import Button from 'primevue/button';
-import Paginator from 'primevue/paginator';
 import { memoryStorage } from '@/storage';
 import { useToast } from 'primevue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Transaction, TransactionResponse } from '@/types';
-import { usePagination } from '@/composables/pagination';
 import { getRandomColor, getInitials } from '@/utils';
 
-const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
-  closeDialog, showDetailDialog } = usePagination();
-
+const isLoading = ref<boolean>(false);
+const isMutated = ref<boolean>(false);
+const showDetailDialog = ref<boolean>(false);
+const closeDialog = () => {
+  showDetailDialog.value = false;
+  selectedTransaction.value = null;
+};
+const currentPage = ref<number>(1);
+const rowsPerPage = ref<number>(10);
+const totalPages = ref<number>(0);
 const transactions = ref<Transaction[]>([]);
 const selectedTransaction = ref<Transaction | null>(null);
 const detailsLoading = ref<boolean>(false);
@@ -59,9 +64,6 @@ watch(() => route.query, (newQuery) => {
 }, { immediate: true });
 
 onMounted(() => {
-  if (!route.query.page && !route.query.query) {
-    updateRouteParams();
-  }
 });
 
 const loadTransactionDetails = async (id: number) => {
@@ -217,17 +219,6 @@ const getStatusColor = (status: string) => {
           <p class="text-lg text-gray-400">No transactions found</p>
           <Button label="Refresh" icon="pi pi-refresh" class="mt-4 bg-green-600 hover:bg-green-700 border-green-600"
             @click="fetchTransactions" />
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-6 flex justify-center">
-          <Paginator :rows="1" :totalRecords="totalPages" :first="currentPage - 1" @page="onPageChange"
-            :rowsPerPageOptions="[]" template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
-            class="bg-gray-800 bg-opacity-80 border border-gray-700 rounded-lg shadow-sm backdrop-blur-sm">
-            <template #start>
-              <span class="text-sm text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages }}</span>
-            </template>
-          </Paginator>
         </div>
 
         <!-- Transaction Detail Dialog -->

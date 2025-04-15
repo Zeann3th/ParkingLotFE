@@ -1,17 +1,26 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, type Ref } from 'vue';
 import { useAuth } from '@/composables/auth';
-import { Dialog, Avatar, Skeleton, Button, Paginator, InputText, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
+import { Dialog, Avatar, Skeleton, Button, InputText, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Notification } from '@/types';
 import { notificationService } from '@/services/notification.service';
 import { formatDate, getInitials, getRandomColor, truncateStr } from '@/utils';
-import { usePagination } from '@/composables/pagination';
+import Title from '@/components/Title.vue';
+import FloatingButton from '@/components/FloatingButton.vue';
+import EmptyMessage from '@/components/EmptyMessage.vue';
 
-const { isLoading, isMutated, totalPages, currentPage, rowsPerPage, updateRouteParams, onPageChange,
-  closeDialog, showDetailDialog } = usePagination();
-
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+const totalPages = ref(0);
+const isLoading = ref(false);
+const isMutated = ref(false);
+const closeDialog = () => {
+  showDetailDialog.value = false;
+  selectedNotification.value = null;
+};
+const showDetailDialog = ref(false);
 const { role } = useAuth();
 const notifications: Ref<Notification[]> = ref([]);
 const selectedNotification = ref<Notification | null>(null);
@@ -133,9 +142,6 @@ const sendNotification = async () => {
 };
 
 onMounted(() => {
-  if (!route.query.page) {
-    updateRouteParams();
-  }
 });
 
 const isAdmin = computed(() => role.value === 'ADMIN');
@@ -151,28 +157,10 @@ const cancelNewNotification = () => {
     <!-- Base theme classes -->
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6 text-gray-800 dark:text-gray-100">
       <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">Inbox</h1>
-          <Button icon="pi pi-refresh"
-            class="p-button-text text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400"
-            @click="getAllNotifications" />
-        </div>
+        <Title name="Notifications" @click="getAllNotifications" />
 
         <!-- Skeleton Loading -->
-        <div v-if="isLoading" class="space-y-3">
-          <div v-for="n in 5" :key="n"
-            class="bg-white dark:bg-gray-800 dark:bg-opacity-80 rounded-lg p-4 flex items-start space-x-4 shadow border border-gray-200 dark:border-transparent dark:backdrop-blur-sm">
-            <Skeleton shape="circle" size="3rem" class="bg-gray-300 dark:bg-gray-700 flex-shrink-0"></Skeleton>
-            <div class="flex-1">
-              <div class="flex justify-between mb-2">
-                <Skeleton width="30%" height="1.2rem" class="bg-gray-300 dark:bg-gray-700"></Skeleton>
-                <Skeleton width="20%" height="1rem" class="bg-gray-300 dark:bg-gray-700"></Skeleton>
-              </div>
-              <Skeleton width="90%" height="1rem" class="mb-2 bg-gray-300 dark:bg-gray-700"></Skeleton>
-              <Skeleton width="75%" height="1rem" class="bg-gray-300 dark:bg-gray-700"></Skeleton>
-            </div>
-          </div>
-        </div>
+        <Skeleton v-if="isLoading" />
 
         <!-- Notifications List -->
         <div v-else class="space-y-3">
@@ -186,7 +174,6 @@ const cancelNewNotification = () => {
               <!-- Avatar -->
               <Avatar :label="getInitials(notification.from.name)" class="flex-shrink-0 mr-4"
                 :style="{ backgroundColor: getRandomColor(notification.from.id), color: '#fff' }" />
-              <!-- Ensure text is white -->
 
               <!-- Content -->
               <div class="flex-1 min-w-0">
@@ -216,26 +203,8 @@ const cancelNewNotification = () => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="!isLoading && notifications.length === 0"
-          class="text-center py-12 bg-white dark:bg-gray-800 dark:bg-opacity-80 rounded-lg shadow border border-gray-200 dark:border-transparent dark:backdrop-blur-sm">
-          <i class="pi pi-inbox text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
-          <p class="text-lg text-gray-500 dark:text-gray-400">Your inbox is empty</p>
-          <Button label="Refresh" icon="pi pi-refresh"
-            class="mt-4 bg-green-600 hover:bg-green-700 border-green-600 text-white" @click="getAllNotifications" />
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-6 flex justify-center">
-          <!-- Apply theme classes to the Paginator itself -->
-          <Paginator :rows="1" :totalRecords="totalPages" :first="currentPage - 1" @page="onPageChange"
-            :rowsPerPageOptions="[]" template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
-            class="bg-white dark:bg-gray-800 dark:bg-opacity-80 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm dark:backdrop-blur-sm">
-            <template #start>
-              <!-- Ensure text color matches theme -->
-              <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Page {{ currentPage }} of {{ totalPages
-              }}</span>
-            </template>
-          </Paginator>
+        <div v-if="!isLoading && notifications.length === 0">
+          <EmptyMessage icon="pi pi-bell" message="No Notifications Found" @click="getAllNotifications" />
         </div>
 
         <!-- Notification Detail Dialog -->
@@ -360,36 +329,15 @@ const cancelNewNotification = () => {
           </div>
         </Dialog>
 
-        <!-- Confirm Dialog -->
-        <!-- Theming for ConfirmDialog is primarily handled through scoped CSS :deep selectors -->
         <ConfirmDialog></ConfirmDialog>
       </div>
     </div>
 
-    <!-- Floating Action Button -->
-    <button @click="openNewNotificationDialog"
-      class="floating-btn bg-green-600 hover:bg-green-700 text-white shadow-lg">
-      <i class="pi pi-plus"></i>
-    </button>
+    <FloatingButton icon="+" @click="openNewNotificationDialog" />
   </MenuLayout>
 </template>
 
 <style scoped>
-.floating-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  transition: all 0.2s ease;
-  z-index: 99;
-}
-
 :deep(.p-dialog) {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
 }
