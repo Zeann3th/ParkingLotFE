@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { memoryStorage } from '@/storage';
-import type { ResidenceDetail, ResidenceResponse } from '@/types';
+import type { Residence, ResidenceResponse } from '@/types';
 
 export const residenceService = {
   async getAll(page: number = 1, limit: number = 10, opts?: { cache: boolean; }): Promise<ResidenceResponse> {
@@ -14,8 +14,8 @@ export const residenceService = {
     return response.data;
   },
 
-  async getById(id: number): Promise<ResidenceDetail> {
-    const response = await axios.get<ResidenceDetail>(`/residences/${id}`, {
+  async getById(id: number): Promise<Residence> {
+    const response = await axios.get<Residence>(`/residences/${id}`, {
       headers: {
         Authorization: `Bearer ${memoryStorage.getToken()}`,
       }
