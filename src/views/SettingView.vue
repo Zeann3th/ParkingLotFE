@@ -113,25 +113,24 @@ const handlePasswordReset = async () => {
 
       <!-- Theme Settings Section -->
       <section>
-        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Theme Settings</h2>
-        <div
-          class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700 max-w-md">
+        <h2 class="text-xl font-semibold mb-4 text-black">Theme Settings</h2>
+        <div class="bg-white p-6 rounded-lg shadow max-w-md">
         </div>
       </section>
 
       <!-- Account Credentials Section -->
       <section>
-        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Account Credentials</h2>
-        <div
-          class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700 max-w-md space-y-4">
-          <p class="text-sm text-gray-600 dark:text-gray-300">
+        <h2 class="text-xl font-semibold mb-4 text-black">Account Credentials</h2>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow max-w-md space-y-4">
+          <p class="text-sm text-black">
             Request password reset instructions (including a PIN) to be sent to your registered email address: <strong
-              class="text-gray-800 dark:text-white break-all">{{ email }}</strong>.
+              class="text-black break-all">{{ email }}</strong>.
           </p>
           <ConfirmDialog />
-          <Button type="button" @click="confirmPasswordResetRequest" label="Send Reset Instructions" icon="pi pi-send"
-            :loading="isSubmittingRequest" :disabled="showPasswordForm" class="w-full md:w-auto" />
-          <p v-if="showPasswordForm" class="text-sm text-green-600 dark:text-green-400 font-medium">
+          <Button type="button" @click="confirmPasswordResetRequest" label=" Send Reset Instructions" icon="pi pi-send"
+            :loading="isSubmittingRequest" :disabled="showPasswordForm"
+            class="w-full md:w-auto bg-primary hover:bg-primary/80 p-2 text-white rounded-lg" unstyled />
+          <p v-if="showPasswordForm" class="text-sm text-primary hover:text-primary/80 font-medium">
             Instructions sent! Please check your email and fill out the form below.
           </p>
         </div>
@@ -140,7 +139,7 @@ const handlePasswordReset = async () => {
 
       <!-- Reset Password Form  -->
       <section v-if="showPasswordForm" class="password-reset-section animate-fade-in">
-        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Reset Your Password</h2>
+        <h2 class="text-xl font-semibold mb-4 text-black">Reset Your Password</h2>
         <div class="modal-container max-w-md p-6 sm:p-8">
 
           <form @submit.prevent="handlePasswordReset" class="space-y-5">
@@ -187,41 +186,6 @@ const handlePasswordReset = async () => {
 
 
 <style scoped>
-:root {
-  --text-color: #1f2937;
-  --text-color-secondary: #6b7280;
-  --surface-ground: #f3f4f6;
-  --surface-card: #ffffff;
-  --surface-border: #e5e7eb;
-  --surface-section: #ffffff;
-  --primary-color: #2563eb;
-  --primary-color-hover: #1d4ed8;
-  --primary-color-text: #ffffff;
-  --link-color: #2563eb;
-  --link-color-hover: #1e40af;
-}
-
-html.dark {
-  --text-color: #f3f4f6;
-  --text-color-secondary: #9ca3af;
-  --surface-ground: #111827;
-  --surface-card: #1f2937;
-  --surface-border: #374151;
-  --surface-section: #374151;
-  --primary-color: #3b82f6;
-  --primary-color-hover: #2563eb;
-  --primary-color-text: #ffffff;
-  --link-color: #60a5fa;
-  --link-color-hover: #93c5fd;
-}
-
-.label-themed {
-  display: block;
-  font-weight: 500;
-  color: var(--text-color-secondary);
-  transition: color 0.3s;
-}
-
 :deep(.input-themed.p-inputtext) {
   background-color: var(--surface-section);
   border: 1px solid var(--surface-border);
@@ -278,7 +242,6 @@ html.dark {
   transform: scale(0.98);
 }
 
-/* Theme for outline button used for theme toggle */
 :deep(.p-button-outlined) {
   color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
@@ -289,7 +252,6 @@ html.dark {
   /* Needs tweaking if using hex */
 }
 
-/* Link Styling */
 .link-themed {
   color: var(--link-color);
   font-weight: 500;

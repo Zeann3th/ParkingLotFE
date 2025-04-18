@@ -99,10 +99,9 @@ const handleSignIn = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+  <div class="min-h-screen bg-secondary transition-colors duration-300">
     <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-      <div
-        class="absolute top-1/4 left-1/4 w-64 h-64 bg-green-500/5 dark:bg-green-500/10 rounded-full blur-3xl animate-pulse-slow">
+      <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse-slow">
       </div>
       <div
         class="absolute bottom-1/3 right-1/4 w-96 h-96 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow delay-2000">
@@ -110,45 +109,44 @@ const handleSignIn = async () => {
     </div>
 
     <nav
-      class="sticky top-0 z-20 flex justify-between items-center p-4 md:p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-      <RouterLink to="/"
-        class="text-2xl font-bold bg-gradient-to-r from-green-500 to-cyan-500 dark:from-green-400 dark:to-cyan-400 bg-clip-text text-transparent">
-        The Parking<span class="text-gray-900 dark:text-white">Hub</span>
+      class="sticky top-0 z-20 flex justify-between items-center p-4 md:p-6 bg-secondary/80 shadow-md backdrop-blur-lg transition-colors duration-300">
+      <RouterLink to="/" class="text-2xl font-bold text-primary">
+        The Parking Hub
       </RouterLink>
       <div class="flex gap-2 md:gap-4">
         <Button label="Sign In"
-          class="p-button-themed rounded-lg text-sm md:text-base bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 px-4 py-2 md:px-6 md:py-3 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white transition-colors duration-300"
-          @click="handleSignIn()" />
+          class="p-button-themed rounded-lg text-sm md:text-base bg-primary hover:bg-primary/80 px-4 py-2 md:px-6 md:py-3"
+          @click="handleSignIn()" unstyled />
         <RouterLink to="/sign-up">
           <Button label="Get Started"
-            class="p-button-themed rounded-lg text-sm md:text-base bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 px-4 py-2 md:px-6 md:py-3 border-none shadow-lg text-white" />
+            class="p-button-themed rounded-lg text-sm md:text-base bg-primary hover:bg-primary/80 px-4 py-2 md:px-6 md:py-3"
+            unstyled />
         </RouterLink>
       </div>
     </nav>
 
     <header id="about" class="relative z-10 text-center py-16 md:py-24 px-4 max-w-6xl mx-auto">
-      <h1
-        class="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-600 to-cyan-600 dark:from-green-400 dark:to-cyan-400 bg-clip-text text-transparent mb-6 leading-tight">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-primary mb-6 leading-tight">
         Smart Parking Solutions
       </h1>
-      <p class="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+      <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
         Effortless, secure, and tech-driven parking experiences designed for you.
       </p>
     </header>
 
     <section id="features" class="relative z-10 max-w-5xl mx-auto px-4 mb-16 md:mb-24">
       <div
-        class="bg-white/70 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8 shadow-xl transition-colors duration-300">
-        <h2 class="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">Why Choose Us?</h2>
+        class="bg-secondary/70 backdrop-blur-lg rounded-xl p-6 md:p-8 shadow-xl  border border-gray-200 transition-colors duration-300">
+        <h2 class="text-3xl font-bold text-center mb-8 text-black">Why Choose Us?</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div v-for="(feature, index) in features" :key="index" @mouseenter="activeFeature = index"
             class="p-6 rounded-lg transition-all duration-300 cursor-pointer border" :class="{
-              'bg-green-50/80 dark:bg-gray-700/50 border-green-300 dark:border-green-500/40 ring-1 ring-green-300/50 dark:ring-green-500/30 shadow-md': activeFeature === index,
-              'bg-white dark:bg-gray-700/30 border-gray-200 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50': activeFeature !== index
+              'bg-blue-200/80 border-primary shadow-md': activeFeature === index,
+              'bg-white border-gray-200 hover:border-gray-3 hover:bg-gray-50': activeFeature !== index
             }">
             <div class="text-4xl mb-4">{{ feature.icon }}</div>
-            <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{{ feature.title }}</h3>
-            <p class="text-gray-600 dark:text-gray-400">{{ feature.description }}</p>
+            <h3 class="text-xl font-semibold mb-2 text-black">{{ feature.title }}</h3>
+            <p class="text-black">{{ feature.description }}</p>
           </div>
         </div>
       </div>
@@ -158,8 +156,8 @@ const handleSignIn = async () => {
       <div
         class="bg-white/70 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8 shadow-xl transition-colors duration-300">
         <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Transparent Pricing</h2>
-          <p class="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <h2 class="text-3xl font-bold mb-4 text-black">Transparent Pricing</h2>
+          <p class="text-lg md:text-xl text-black max-w-2xl mx-auto">
             Simple, flexible plans tailored to your parking needs.
           </p>
         </div>
