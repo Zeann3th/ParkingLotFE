@@ -81,8 +81,7 @@ const handleCheckOut = async (event: Event) => {
 
 <template>
   <MenuLayout>
-    <div
-      class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 md:p-8 transition-colors duration-300">
+    <div class="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 transition-colors duration-300">
       <div class="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
 
         <!-- Check In Card -->

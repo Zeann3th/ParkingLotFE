@@ -57,13 +57,13 @@ const router = createRouter({
       path: "/tickets",
       component: TicketView,
       name: "tickets",
-      meta: { title: "Tickets", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
+      meta: { title: "Tickets", requiresAuth: true, allows: ["ADMIN", "SECURITY"] }
     },
     {
       path: "/residences",
       component: ResidenceView,
       name: "residences",
-      meta: { title: "Residences", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
+      meta: { title: "Residences", requiresAuth: true, allows: ["ADMIN", "SECURITY"] }
     },
     {
       path: "/transactions",

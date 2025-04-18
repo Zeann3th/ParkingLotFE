@@ -16,14 +16,13 @@ const { username, role } = useAuth();
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-900">
+  <div class="flex h-screen bg-secondary text-black">
     <!-- Sidebar -->
-    <div class="relative w-64 bg-gray-800 border-r border-gray-700">
+    <div class="relative w-64 bg-secondary border-r border-secondary shadow-md">
       <div class="h-full flex flex-col">
-        <div class="p-4 border-b border-gray-700">
-          <RouterLink to="/"
-            class="text-2xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent pl-2">
-            The Parking<span class="text-white">Hub</span>
+        <div class="p-4 border-b border-secondary">
+          <RouterLink to="/" class="text-2xl font-bold text-primary pl-2">
+            The Parking Hub
           </RouterLink>
         </div>
 
@@ -31,8 +30,8 @@ const { username, role } = useAuth();
           <ul>
             <li v-for="(item, index) in items" :key="index">
               <RouterLink v-if="item.url" :to="item.url"
-                class="flex items-center p-3 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
-                active-class="bg-gray-700 text-green-400">
+                class="flex items-center p-3 hover:bg-primary hover:text-white rounded-lg transition-colors"
+                active-class="bg-primary text-white">
                 <span :class="item.icon" class="mr-3"></span>
                 <span>{{ item.label }}</span>
                 <span v-if="item.badge"
@@ -44,21 +43,21 @@ const { username, role } = useAuth();
           </ul>
         </nav>
 
-        <div class="sticky bottom-0 p-4 border-t border-gray-700 bg-gray-800">
+        <div class="sticky bottom-0 p-4 border-t border-secondary bg-secondary">
           <div class="flex items-center relative">
             <img src="https://avatar.iran.liara.run/public" alt="User" class="w-10 h-10 rounded-full mr-3">
             <div>
-              <p class="font-medium text-gray-300">{{ username }}</p>
-              <p class="text-xs text-gray-500">{{ role }}</p>
+              <p class="font-medium">{{ username }}</p>
+              <p class="text-xs">{{ role }}</p>
             </div>
-            <Button type="button" icon="pi pi-ellipsis-v"
-              class="p-button-text p-button-rounded ml-auto text-gray-400 hover:text-green-400" @click="toggleMenu" />
+            <Button type="button" icon="pi pi-ellipsis-v" class="ml-auto text-black hover:text-black/80"
+              @click="toggleMenu" unstyled />
 
             <Menu ref="menu" :model="userProfile" :popup="true"
-              class="w-48 bg-gray-800 border border-gray-700 absolute top-[-12rem] right-0 mb-2">
+              class="w-48 bg-secondary border border-secondary text-black shadow-md absolute top-[-12rem] right-0 mb-2">
               <template #item="{ item }">
                 <RouterLink v-if="item.url" :to="item.url"
-                  class="flex items-center p-2 text-gray-300 hover:bg-gray-700">
+                  class="flex items-center p-2 hover:bg-gray-100 hover:text-black">
                   <span :class="item.icon" class="mr-2"></span>
                   <span>{{ item.label }}</span>
                 </RouterLink>
@@ -70,7 +69,7 @@ const { username, role } = useAuth();
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-auto bg-gray-900 p-4">
+    <div class="flex-1 overflow-auto bg-secondary p-4">
       <slot />
     </div>
   </div>

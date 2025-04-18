@@ -11,12 +11,12 @@ const { role, username } = useAuth();
 
 const items = ref<MenuItem[]>([
   { label: "Dashboard", icon: "pi pi-fw pi-chart-bar", url: "/dashboard" },
-  { label: "Tickets", icon: "pi pi-fw pi-ticket", url: "/tickets" },
-  { label: "Residences", icon: "pi pi-fw pi-home", url: "/residences" },
 ]);
 
 if (role.value === "ADMIN" || role.value === "SECURITY") {
   items.value.push(
+    { label: "Tickets", icon: "pi pi-fw pi-ticket", url: "/tickets" },
+    { label: "Residences", icon: "pi pi-fw pi-home", url: "/residences" },
     { label: "Sections", icon: "pi pi-fw pi-warehouse", url: "/sections" },
     { label: "Vehicles", icon: "pi pi-fw pi-car", url: "/vehicles" },
     { label: "Parking", icon: "pi pi-fw pi-stopwatch", url: "/parking" }

@@ -10,6 +10,7 @@ import Skeleton from '@/components/Skeleton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import FloatingButton from '@/components/FloatingButton.vue';
 import { useState } from '@/composables/state';
+import Title from '@/components/Title.vue';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>();
 const { role } = useAuth();
@@ -89,15 +90,9 @@ const getTypeLabel = (type: string) => {
 
 <template>
   <MenuLayout>
-    <div
-      class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <div class="min-h-screen p-4 md:p-6 transition-colors duration-300">
       <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">Tickets</h1>
-          <Button icon="pi pi-refresh"
-            class="p-button-text text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400"
-            @click="getAllTickets" aria-label="Refresh Tickets" />
-        </div>
+        <Title name="Tickets" @click="getAllTickets" />
 
         <!-- Skeleton Loading -->
         <Skeleton v-if="isLoading" />
@@ -176,7 +171,7 @@ const getTypeLabel = (type: string) => {
           </div>
 
           <div v-if="isDetailLoading" class="p-4 md:p-6 space-y-4">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
+            <div class="flex justify-between items-center mb-6 border-b border-secondary pb-3">
               <Skeleton width="40%" height="1.8rem" />
               <Skeleton shape="circle" size="2rem" />
             </div>
@@ -186,7 +181,7 @@ const getTypeLabel = (type: string) => {
             <Skeleton width="70%" height="1.2rem" class="mb-3" />
             <Skeleton width="30%" height="1rem" class="mb-1" />
             <Skeleton width="40%" height="1.2rem" class="mb-3" />
-            <div class="flex justify-end mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex justify-end mt-8 pt-4 border-t border-gray-200">
               <Skeleton width="90px" height="2.5rem" />
             </div>
           </div>
