@@ -65,15 +65,24 @@ export interface Pricing {
   price: number;
 }
 
+export type TicketType = 'DAILY' | 'MONTHLY' | 'RESERVED';
+
 export interface Ticket {
   id: number;
-  title: string;
-  type: "DAILY" | "MONTHLY" | "RESERVED";
+  type: TicketType;
   status: "AVAILABLE" | "INUSE" | "LOST";
   vehicleId?: number;
   userId?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateTicket {
+  type: TicketType | null;
+  userId?: number;
+  vehicleId?: number;
+  sectionId?: number;
+  slot?: number;
 }
 
 export interface TicketResponse {

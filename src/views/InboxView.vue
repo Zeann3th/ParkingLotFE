@@ -131,6 +131,7 @@ const sendNotification = async () => {
 };
 
 const isAdmin = computed(() => role.value === 'ADMIN');
+const isPrivilleged = computed(() => role.value === 'ADMIN' || role.value === 'SECURITY');
 
 const cancelNewNotification = () => {
   newNotification.value = { to: '', message: '' };
@@ -202,14 +203,13 @@ const cancelNewNotification = () => {
               <Skeleton width="60%" height="1.5rem"></Skeleton>
             </div>
 
-            <!-- Detail Content (Rendered when not loading and item exists) -->
             <div v-else-if="selectedItem">
               <div class="mb-6">
                 <div class="flex items-center space-x-3">
                   <Avatar :name="selectedItem.from.username" :id="selectedItem.from.id" />
                   <div>
-                    <h2 class="text-xl font-bold text-green-600">{{ selectedItem.from.name }}</h2>
-                    <p class="text-sm text-gray-500">@{{ selectedItem.from.username }}</p>
+                    <h2 class="text-xl font-bold text-primary">{{ selectedItem.from.name }}</h2>
+                    <p class="text-sm text-black">@{{ selectedItem.from.username }}</p>
                   </div>
                 </div>
               </div>
@@ -239,8 +239,6 @@ const cancelNewNotification = () => {
               </div>
 
               <div class="flex justify-end mt-6 space-x-3">
-                <Button v-if="isAdmin" label="Reply" icon="pi pi-reply"
-                  class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100" />
                 <Button v-if="isAdmin" icon="pi pi-trash" label="Delete"
                   class="p-button-outlined p-button-danger text-red-600 border-red-400 hover:bg-red-50"
                   @click="deleteNotification(selectedItem.id)" />
@@ -263,8 +261,7 @@ const cancelNewNotification = () => {
 
           <!-- Dialog Content -->
           <div class="p-4">
-            <!-- Username Input (Admin only) -->
-            <div v-if="isAdmin" class="mb-4">
+            <div v-if="isPrivilleged" class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-2">Recipient User ID
                 (Optional)</label>
               <div class="flex items-center space-x-2">
