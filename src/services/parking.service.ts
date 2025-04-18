@@ -10,9 +10,11 @@ export const parkingService = {
       ticketId: Number(checkInData.ticketId),
     };
 
-    return axios.post("/check-in", payload, {
+    const response = await axios.post("/parking/check-in", payload, {
       headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
     });
+
+    return response.data;
   },
 
   async checkOut(checkOutData: CheckOut): Promise<{ fee: number, message?: string; }> {
@@ -22,8 +24,10 @@ export const parkingService = {
       ticketId: Number(checkOutData.ticketId),
     };
 
-    return axios.post("/check-out", payload, {
+    const response = await axios.post("/parking/check-out", payload, {
       headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
     });
+
+    return response.data;
   }
 };

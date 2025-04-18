@@ -47,12 +47,12 @@ const handleCheckIn = async (event: Event) => {
       type: checkIn.value.type.toUpperCase()
     });
     if (!response.message) {
+      toast.add({ severity: 'success', summary: 'Success', detail: 'Check-in successful.', life: 4000 });
       checkIn.value = { sectionId: '', ticketId: '', plate: '', type: '' };
     } else {
       toast.add({ severity: 'error', summary: 'Check-In Failed', detail: response?.message || 'An unknown error occurred.', life: 4000 });
     }
   } catch (error: any) {
-    console.error("Check-in Error:", error);
     const detail = error?.response?.data?.message || 'Failed to check in due to a server error.';
     toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 4000 });
   }
@@ -68,7 +68,8 @@ const handleCheckOut = async (event: Event) => {
       plate: checkOut.value.plate.toUpperCase()
     });
     if (!response.message) {
-      const feeFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(response.fee || 0);
+      console.log(response.fee);
+      const feeFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(response.fee);
       toast.add({ severity: 'success', summary: 'Success', detail: `Check-out successful. Fee: ${feeFormatted}`, life: 8000 });
       checkOut.value = { sectionId: '', ticketId: '', plate: '' };
     } else {

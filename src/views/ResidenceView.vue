@@ -19,6 +19,7 @@ const getAllResidences = async () => {
   isLoading.value = true;
   try {
     const response = await residenceService.getAll(page.value, limit.value, { cache: !isMutated.value && !!route.query.page });
+    console.log(response.data)
     itemList.value = response.data;
     maxPage.value = response.count;
     isMutated.value = false;
@@ -99,17 +100,14 @@ const getVehicleTypeIcon = (type: string) => {
             <div class="flex justify-between items-start mb-3 gap-2">
               <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100 line-clamp-1 break-all flex-1"
                 :title="`Building ${residence.building}, Room ${residence.room}`">
-                {{ `Bldg ${residence.building} / Room ${residence.room}` }}
+                {{ `Building ${residence.building} / Room ${residence.room}` }}
               </h2>
-              <!-- Optional: Status Badge can be added here if needed -->
             </div>
 
-            <!-- Card Body Info -->
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">
               <div v-if="residence.residents?.length" class="mt-1 text-xs">
                 {{ residence.residents.length }} Resident(s)
               </div>
-              <!-- Add other brief info if necessary -->
             </div>
 
             <!-- Card Footer -->
@@ -126,9 +124,7 @@ const getVehicleTypeIcon = (type: string) => {
         <!-- Residence Detail Dialog -->
         <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
           :style="{ width: '90%', maxWidth: '600px' }"
-          contentClass="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100 !rounded-lg !shadow-xl !p-0" <!--
-          Apply styles to contentClass, remove internal padding -->
-          :dismissableMask="true">
+          contentClass="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100 !rounded-lg !shadow-xl !p-0">
 
           <div>
             <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
@@ -139,15 +135,9 @@ const getVehicleTypeIcon = (type: string) => {
             </div>
 
             <div v-if="isDetailLoading" class="p-6 text-center text-gray-500 dark:text-gray-400">
-              Loading details...
-              <div class="mt-4 space-y-3">
-                <Skeleton width="60%" height="1.5rem" class="mb-4 bg-gray-200 dark:bg-gray-700 mx-auto" />
-                <Skeleton width="100%" height="1rem" class="mb-2 bg-gray-200 dark:bg-gray-700" />
-                <Skeleton width="80%" height="1rem" class="mb-2 bg-gray-200 dark:bg-gray-700" />
-              </div>
+              <Skeleton />
             </div>
 
-            <!-- Main Content Area (shows when NOT loading) -->
             <div v-if="selectedItem && !isDetailLoading" class="p-5 md:p-6">
               <div class="space-y-3">
                 <!-- Detail Row: ID -->
