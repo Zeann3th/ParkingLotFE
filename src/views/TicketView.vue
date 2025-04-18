@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import { Dialog, Button, useToast } from 'primevue';
-import { useRoute, RouterLink } from 'vue-router';
+import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Ticket } from '@/types';
 import { ticketService } from '@/services/ticket.service';
@@ -104,10 +104,6 @@ const getStatusTextClasses = (status: string) => {
             <!-- Main Ticket Body -->
             <div class="p-5 flex-grow"> <!-- Use flex-grow to take up available space -->
               <div class="flex justify-between items-start mb-3 gap-2">
-                <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1"
-                  :title="ticket.title">
-                  {{ ticket.title }}
-                </h2>
                 <span :class="getStatusBadgeClasses(ticket.status)">
                   {{ ticket.status }}
                 </span>
@@ -142,7 +138,7 @@ const getStatusTextClasses = (status: string) => {
 
         <!-- Ticket Detail Dialog (Remains the same) -->
         <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
-          class="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100 !rounded-xl !shadow-xl !border !border-gray-200 dark:!border-gray-700"
+          class="!bg-secondary !text-black !rounded-xl !shadow-xl !border !border-gray-200"
           :style="{ width: '95%', maxWidth: '550px' }">
           <!-- Custom Header -->
           <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
@@ -178,14 +174,6 @@ const getStatusTextClasses = (status: string) => {
               <!-- Vehicle ID -->
               <template v-if="selectedItem.vehicleId">
                 <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Vehicle ID</span>
-                <div class="col-span-2 text-sm">
-                  <RouterLink :to="`/vehicles/${selectedItem.vehicleId}`"
-                    class="text-primary-600 dark:text-primary-400 hover:underline hover:text-primary-700 dark:hover:text-primary-300 transition-colors duration-200"
-                    title="View vehicle details">
-                    {{ selectedItem.vehicleId }}
-                    <i class="pi pi-external-link !text-xs ml-1 opacity-70"></i>
-                  </RouterLink>
-                </div>
               </template>
 
               <!-- User ID -->

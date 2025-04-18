@@ -190,7 +190,7 @@ const cancelNewNotification = () => {
 
         <!-- Notification Detail Dialog -->
         <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
-          class="bg-white text-gray-900 border border-gray-200 rounded-lg shadow-lg"
+          class="!bg-secondary !text-black !border !border-secondary rounded-lg shadow-lg"
           :style="{ width: '90%', maxWidth: '600px' }">
 
           <div class="p-4 md:p-6">
@@ -258,7 +258,7 @@ const cancelNewNotification = () => {
 
         <!-- New Notification Dialog -->
         <Dialog v-model:visible="dialogs.create" modal header="Create New Notification"
-          class="bg-white text-gray-900 border border-gray-200 rounded-lg shadow-lg"
+          class="!bg-secondary !text-black border !border-secondary rounded-lg shadow-lg"
           :style="{ width: '90%', maxWidth: '500px' }">
 
           <!-- Dialog Content -->
@@ -285,10 +285,10 @@ const cancelNewNotification = () => {
 
             <!-- Actions -->
             <div class="flex justify-end space-x-3 mt-6">
-              <Button label="Cancel" class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100"
+              <Button label="Cancel" class=" !text-white !border-primary !bg-primary !hover:bg-primary/80"
                 @click="cancelNewNotification" />
-              <Button label="Send" icon="pi pi-send" class="bg-green-600 hover:bg-green-700 border-green-600 text-white"
-                @click="sendNotification" />
+              <Button label="Send" icon="pi pi-send"
+                class="!text-white !border-primary !bg-primary !hover:bg-primary/80" @click="sendNotification" />
             </div>
           </div>
         </Dialog>
