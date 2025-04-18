@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { Dialog, Button, useToast } from 'primevue';
 import Skeleton from '@/components/Skeleton.vue';
 import { useRoute } from 'vue-router';
@@ -10,10 +10,16 @@ import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import Title from '@/components/Title.vue';
 import { useState } from '@/composables/state';
+import { useAuth } from '@/composables/auth';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Residence>();
 const toast = useToast();
 const route = useRoute();
+
+const isPrivilleged = computed(() => {
+  const {role} = useAuth();
+  return role.value === "ADMIN" || role.value === "SECURITY";
+})
 
 const getAllResidences = async () => {
   isLoading.value = true;
@@ -87,7 +93,7 @@ const getVehicleTypeIcon = (type: string) => {
     <div
       class="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <div class="max-w-7xl mx-auto">
-        <Title name="Residences Management" @refresh="refreshData" class="mb-6" />
+        <Title name="Residences" @click="refreshData" class="mb-6" />
         <Skeleton v-if="isLoading" type="grid" :count="limit" />
         <div v-else-if="itemList.length > 0"
           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -187,7 +193,7 @@ const getVehicleTypeIcon = (type: string) => {
 
             <div v-if="selectedItem && !isDetailLoading"
               class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
-              <Button label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
+              <Button v-if="isPrivilleged" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
                            !border-primary-500 !text-primary-600 hover:!bg-primary-50
                            dark:!border-primary-400 dark:!text-primary-300 dark:hover:!bg-primary-900/20
                            focus:!ring-2 focus:!ring-primary-500/50" @click="updateResidence(selectedItem.id)" />
@@ -200,6 +206,6 @@ const getVehicleTypeIcon = (type: string) => {
       </div>
     </div>
 
-    <FloatingButton icon="+" @click="createResidence" aria-label="Add new residence" />
+    <FloatingButton v-if="isPrivilleged" icon="+" @click="createResidence" aria-label="Add new residence" />
   </MenuLayout>
 </template>

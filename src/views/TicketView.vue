@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Dialog, Button, useToast } from 'primevue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
@@ -11,10 +11,16 @@ import FloatingButton from '@/components/FloatingButton.vue';
 import { useState } from '@/composables/state';
 import Title from '@/components/Title.vue';
 import { InputNumber } from 'primevue';
+import { useAuth } from '@/composables/auth';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>();
 const toast = useToast();
 const route = useRoute();
+
+const isPrivilledged = computed(() => {
+  const {role} = useAuth();
+  return role.value === 'ADMIN' || role.value === 'SECURITY';
+})
 
 const createTicketPayload = ref<CreateTicket>({
   type: null,
@@ -195,7 +201,7 @@ const getStatusTextClasses = (status: string) => {
           <!-- Footer/Actions -->
           <div
             class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
+            <Button v-if="isPrivilledged" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
                      !border-primary-500 !text-primary-600 hover:!bg-primary-50
                      dark:!border-primary-400 dark:!text-primary-300 dark:hover:!bg-primary-900/20
                      focus:!ring-2 focus:!ring-primary-500/50"
@@ -315,7 +321,7 @@ const getStatusTextClasses = (status: string) => {
       </div>
     </div>
 
-    <FloatingButton icon="+" @click="openDialog('create')" aria-label="Add new ticket" />
+    <FloatingButton v-if="isPrivilledged" icon="+" @click="openDialog('create')" aria-label="Add new ticket" />
   </MenuLayout>
 </template>
 
