@@ -167,24 +167,23 @@ const resendVerificationCode = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 flex items-center justify-center px-4 py-8">
+  <div class="min-h-screen bg-secondary flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-md">
       <!-- Registration Form -->
-      <div v-if="!showPopUp"
-        class="bg-gray-800 bg-opacity-80 shadow-xl rounded-xl border border-gray-700 p-8 space-y-6 backdrop-blur-sm">
+      <div v-if="!showPopUp" class="bg-secondary bg-opacity-80 shadow-xl rounded-xl p-8 space-y-6 backdrop-blur-sm">
         <div class="text-center">
-          <h1 class="text-3xl font-bold text-green-400 mb-2">Create account</h1>
-          <p class="text-sm text-gray-400">Sign up for a new account</p>
+          <h1 class="text-3xl font-bold text-primary mb-2">Create account</h1>
+          <p class="text-sm text-gray-800">Sign up for a new account</p>
         </div>
 
         <form @submit="handleSubmit" class="space-y-6">
           <div class="space-y-4">
             <!-- Username Field -->
             <div>
-              <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
+              <label for="username" class="block text-sm font-medium text-black mb-2">
                 Username
               </label>
-              <InputText id="username" v-model="username" placeholder="Enter your username" class="w-full py-2 px-3 bg-gray-700 bg-opacity-70 border border-gray-600 rounded-lg text-white 
+              <InputText id="username" v-model="username" placeholder="Enter your username" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
                 disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-400" :disabled="isSubmitted"
                 required />
@@ -192,39 +191,39 @@ const resendVerificationCode = async () => {
 
             <!-- Name Field -->
             <div>
-              <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
+              <label for="name" class="block text-sm font-medium text-black mb-2">
                 Name
               </label>
-              <InputText id="name" v-model="name" placeholder="Enter your name" class="w-full py-2 px-3 bg-gray-700 bg-opacity-70 border border-gray-600 rounded-lg text-white 
-                focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-400" :disabled="isSubmitted"
+              <InputText id="name" v-model="name" placeholder="Enter your name" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
+                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
                 required />
             </div>
 
             <!-- Email Field -->
             <div>
-              <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
+              <label for="email" class="block text-sm font-medium text-black mb-2">
                 Email
               </label>
-              <InputText id="email" v-model="email" type="email" placeholder="Enter your email" class="w-full py-2 px-3 bg-gray-700 bg-opacity-70 border border-gray-600 rounded-lg text-white 
-                focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-400" :disabled="isSubmitted"
+              <InputText id="email" v-model="email" type="email" placeholder="Enter your email" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
+                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
                 required />
             </div>
 
             <!-- Password Field -->
             <div>
-              <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
+              <label for="password" class="block text-sm font-medium text-black mb-2">
                 Password
               </label>
               <div class="relative">
                 <InputText id="password" :type="showPassword ? 'text' : 'password'" v-model="password"
-                  placeholder="Enter your password" class="w-full py-2 px-3 bg-gray-700 bg-opacity-70 border border-gray-600 rounded-lg text-white 
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-400" :disabled="isSubmitted"
+                  placeholder="Enter your password" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
+                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
                   required />
                 <button type="button" @click="showPassword = !showPassword"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-400 focus:outline-none">
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 focus:outline-none">
                   <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path
@@ -243,17 +242,17 @@ const resendVerificationCode = async () => {
 
             <!-- Confirm Password Field -->
             <div>
-              <label for="retypePassword" class="block text-sm font-medium text-gray-300 mb-2">
+              <label for="retypePassword" class="block text-sm font-medium text-black mb-2">
                 Confirm Password
               </label>
               <div class="relative">
                 <InputText id="retypePassword" :type="showRetypePassword ? 'text' : 'password'" v-model="retypePassword"
-                  placeholder="Confirm your password" class="w-full py-2 px-3 bg-gray-700 bg-opacity-70 border border-gray-600 rounded-lg text-white 
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-400" :disabled="isSubmitted"
+                  placeholder="Confirm your password" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
+                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
                   required />
                 <button type="button" @click="showRetypePassword = !showRetypePassword"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-400 focus:outline-none">
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 focus:outline-none">
                   <svg v-if="showRetypePassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path
@@ -278,7 +277,7 @@ const resendVerificationCode = async () => {
             </div>
           </div>
 
-          <Button type="submit" :disabled="isSubmitted || !passwordsMatch" class="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg
+          <Button type="submit" unstyled :disabled="isSubmitted || !passwordsMatch" class="w-full py-2 px-4 bg-primary hover:bg-primary/80 text-white rounded-lg
             focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800
             disabled:opacity-70 disabled:cursor-not-allowed transition duration-200">
             {{ isSubmitted ? "Signing up..." : "Sign up" }}
@@ -286,10 +285,10 @@ const resendVerificationCode = async () => {
         </form>
 
         <div class="text-center mt-4">
-          <p class="text-sm text-gray-400">
+          <p class="text-sm text-gray-800">
             Already have an account?
             <RouterLink to="/sign-in"
-              class="font-medium text-green-400 hover:text-green-300 transition-colors duration-200">
+              class="font-medium text-primary hover:text-primary/80 transition-colors duration-200">
               Sign in instead
             </RouterLink>
           </p>

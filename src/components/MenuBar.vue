@@ -3,11 +3,15 @@ import { ref } from 'vue';
 import { Menu, Menubar, Button } from 'primevue';
 import { RouterLink } from 'vue-router';
 import type { MenuItem } from 'primevue/menuitem';
+import { useAuth } from '@/composables/auth';
+import Avatar from '@/components/Avatar.vue';
 
 defineProps<{
   items: MenuItem[],
   userProfile: MenuItem[]
 }>();
+
+const { username, id } = useAuth();
 
 const menu = ref();
 const toggle = (event: Event) => menu.value.toggle(event);
@@ -27,7 +31,7 @@ const toggle = (event: Event) => menu.value.toggle(event);
 
       <template #end>
         <Button type="button" class="p-button-text p-button-rounded" @click="toggle" aria-controls="profile">
-          <img src="https://avatar.iran.liara.run/public" alt="User" width="40" height="40" class="rounded-full mr-2" />
+          <Avatar :name="username" :id="id" />
         </Button>
         <Menu ref="menu" id="profile" :model="userProfile" :popup="true">
           <template #item="{ item }">

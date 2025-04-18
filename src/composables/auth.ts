@@ -14,7 +14,7 @@ export function useAuth() {
     }
   });
 
-  const id = computed(() => decodedToken.value?.sub || "");
+  const id = computed(() => decodedToken.value?.sub ?? NaN);
   const role = computed(() => decodedToken.value?.role || "");
   const username = computed(() => decodedToken.value?.username || "");
   const email = computed(() => decodedToken.value?.email || "");

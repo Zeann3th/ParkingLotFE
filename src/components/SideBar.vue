@@ -4,6 +4,7 @@ import { useAuth } from '@/composables/auth';
 import { Menu, Button } from 'primevue';
 import { RouterLink } from 'vue-router';
 import type { MenuItem } from 'primevue/menuitem';
+import Avatar from '@/components/Avatar.vue';
 
 defineProps<{
   items: MenuItem[],
@@ -12,7 +13,7 @@ defineProps<{
 
 const menu = ref();
 const toggleMenu = (event: Event) => menu.value.toggle(event);
-const { username, role } = useAuth();
+const { username, role, id } = useAuth();
 </script>
 
 <template>
@@ -45,7 +46,7 @@ const { username, role } = useAuth();
 
         <div class="sticky bottom-0 p-4 border-t border-secondary bg-secondary">
           <div class="flex items-center relative">
-            <img src="https://avatar.iran.liara.run/public" alt="User" class="w-10 h-10 rounded-full mr-3">
+            <Avatar :name="username" :id="id" />
             <div>
               <p class="font-medium">{{ username }}</p>
               <p class="text-xs">{{ role }}</p>
