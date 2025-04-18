@@ -177,8 +177,7 @@ const cancelNewNotification = () => {
 
             <!-- Delete button (Admin only) -->
             <div v-if="isAdmin" class="ml-2 flex-shrink-0" @click.stop>
-              <Button icon="pi pi-trash"
-                class="p-button-text p-button-rounded p-button-sm text-gray-500 hover:text-red-600"
+              <Button icon="pi pi-trash" class="!bg-red-400 !border-red-400"
                 @click="deleteNotification(notification.id)" />
             </div>
           </div>
@@ -194,73 +193,65 @@ const cancelNewNotification = () => {
           class="bg-white text-gray-900 border border-gray-200 rounded-lg shadow-lg"
           :style="{ width: '90%', maxWidth: '600px' }">
 
-          <!-- Detail Content -->
-          <div v-if="selectedItem && !isDetailLoading" class="p-4 md:p-6">
-            <div class="mb-6">
-              <div class="flex items-center space-x-3">
-                <Avatar :name="selectedItem.from.username" :id="selectedItem.from.id" />
-                <div>
-                  <h2 class="text-xl font-bold text-green-600">{{ selectedItem.from.name }}
-                  </h2>
-                  <p class="text-sm text-gray-500">@{{ selectedItem.from.username }}</p>
+          <div class="p-4 md:p-6">
+            <!-- Loading Skeleton -->
+            <div v-if="isDetailLoading">
+              <Skeleton width="40%" height="2rem" class="mb-4"></Skeleton>
+              <Skeleton width="100%" height="1rem" class="mb-2"></Skeleton>
+              <Skeleton width="100%" height="4rem" class="mb-4"></Skeleton>
+              <Skeleton width="60%" height="1.5rem"></Skeleton>
+            </div>
+
+            <!-- Detail Content (Rendered when not loading and item exists) -->
+            <div v-else-if="selectedItem">
+              <div class="mb-6">
+                <div class="flex items-center space-x-3">
+                  <Avatar :name="selectedItem.from.username" :id="selectedItem.from.id" />
+                  <div>
+                    <h2 class="text-xl font-bold text-green-600">{{ selectedItem.from.name }}</h2>
+                    <p class="text-sm text-gray-500">@{{ selectedItem.from.username }}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="space-y-4">
-              <div class="flex flex-col space-y-1">
-                <span class="text-sm text-gray-500">Date</span>
-                <span class="font-medium text-gray-800">{{ formatDate(selectedItem.createdAt)
-                }}</span>
+              <div class="space-y-4">
+                <div class="flex flex-col space-y-1">
+                  <span class="text-sm text-gray-500">Date</span>
+                  <span class="font-medium text-gray-800">{{ formatDate(selectedItem.createdAt) }}</span>
+                </div>
+
+                <div class="flex flex-col space-y-1">
+                  <span class="text-sm text-gray-500">Status</span>
+                  <span :class="[
+                    'inline-block px-2 py-1 text-xs rounded-full',
+                    selectedItem.status === 'READ'
+                      ? 'bg-gray-200 text-gray-800'
+                      : 'bg-green-100 text-green-800'
+                  ]">
+                    {{ selectedItem.status }}
+                  </span>
+                </div>
+
+                <div class="flex flex-col space-y-1">
+                  <span class="text-sm text-gray-500">Message</span>
+                  <span class="font-medium text-gray-800 whitespace-pre-line">{{ selectedItem.message }}</span>
+                </div>
               </div>
 
-              <div class="flex flex-col space-y-1">
-                <span class="text-sm text-gray-500">Status</span>
-                <span :class="[
-                  'inline-block px-2 py-1 text-xs rounded-full',
-                  selectedItem.status === 'READ'
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'bg-green-100 text-green-800'
-                ]">
-                  {{ selectedItem.status }}
-                </span>
-              </div>
-
-              <div class="flex flex-col space-y-1">
-                <span class="text-sm text-gray-500">Message</span>
-                <span class="font-medium text-gray-800 whitespace-pre-line">{{
-                  selectedItem.message
-                }}</span>
+              <div class="flex justify-end mt-6 space-x-3">
+                <Button v-if="isAdmin" label="Reply" icon="pi pi-reply"
+                  class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100" />
+                <Button v-if="isAdmin" icon="pi pi-trash" label="Delete"
+                  class="p-button-outlined p-button-danger text-red-600 border-red-400 hover:bg-red-50"
+                  @click="deleteNotification(selectedItem.id)" />
+                <Button label="Close" @click="closeDialog('view')"
+                  class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100" />
               </div>
             </div>
 
-            <div class="flex justify-end mt-6 space-x-3">
-              <Button v-if="isAdmin" label="Reply" icon="pi pi-reply"
-                class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100" />
-              <Button v-if="isAdmin" icon="pi pi-trash" label="Delete"
-                class="p-button-outlined p-button-danger text-red-600 border-red-400 hover:bg-red-50"
-                @click="deleteNotification(selectedItem.id)" />
-              <Button label="Close" @click="closeDialog('view')"
-                class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100" />
-            </div>
-          </div>
-
-          <!-- Loading state in dialog -->
-          <div v-if="isDetailLoading" class="p-4 space-y-4">
-            <div class="flex items-start space-x-4 mb-6">
-              <Skeleton shape="circle" size="3.5rem" class="bg-gray-300"></Skeleton>
-              <div class="flex-1">
-                <Skeleton width="60%" height="1.5rem" class="mb-2 bg-gray-300"></Skeleton>
-                <Skeleton width="40%" height="1rem" class="bg-gray-300"></Skeleton>
-              </div>
-            </div>
-            <Skeleton width="30%" height="1rem" class="mb-1 bg-gray-300"></Skeleton>
-            <Skeleton width="60%" height="1.5rem" class="mb-4 bg-gray-300"></Skeleton>
-            <Skeleton width="30%" height="1rem" class="mb-1 bg-gray-300"></Skeleton>
-            <Skeleton width="100%" height="1.5rem" class="mb-2 bg-gray-300"></Skeleton>
-            <Skeleton width="90%" height="1.5rem" class="mb-2 bg-gray-300"></Skeleton>
-            <div class="flex justify-end mt-6">
-              <Skeleton width="100px" height="2.5rem" class="bg-gray-300"></Skeleton>
+            <!-- Optional: Add an error state if needed -->
+            <div v-else class="text-center text-red-500 py-4">
+              Failed to load notification details.
             </div>
           </div>
         </Dialog>
@@ -309,111 +300,3 @@ const cancelNewNotification = () => {
     <FloatingButton icon="+" @click="openNewNotificationDialog" />
   </MenuLayout>
 </template>
-
-<style scoped>
-:deep(.p-dialog) {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.p-dialog-header) {
-  background-color: #fff;
-  color: #1f2937;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1rem 1.5rem;
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-}
-
-:deep(.p-dialog-content) {
-  background-color: #fff;
-  color: #1f2937;
-  padding: 1rem 1.5rem;
-  border-bottom-left-radius: 0.5rem;
-  border-bottom-right-radius: 0.5rem;
-}
-
-:deep(.p-paginator) {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-}
-
-:deep(.p-paginator .p-paginator-page),
-:deep(.p-paginator .p-paginator-next),
-:deep(.p-paginator .p-paginator-last),
-:deep(.p-paginator .p-paginator-first),
-:deep(.p-paginator .p-paginator-prev) {
-  color: #6b7280;
-  border: none;
-  background: transparent;
-}
-
-:deep(.p-paginator .p-paginator-page.p-highlight) {
-  background: #10b981;
-  color: white;
-}
-
-:deep(.p-paginator .p-paginator-page:not(.p-highlight):hover),
-:deep(.p-paginator .p-paginator-next:hover),
-:deep(.p-paginator .p-paginator-last:hover),
-:deep(.p-paginator .p-paginator-first:hover),
-:deep(.p-paginator .p-paginator-prev:hover) {
-  color: #059669;
-  background: #f0fdfa;
-}
-
-:deep(.p-inputtext),
-:deep(.p-textarea) {
-  background-color: #fff;
-  border: 1px solid #d1d5db;
-  color: #111827;
-}
-
-:deep(.p-inputtext:focus),
-:deep(.p-textarea:focus) {
-  border-color: #10b981;
-  box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.2);
-}
-
-:deep(.p-inputtext::placeholder),
-:deep(.p-textarea::placeholder) {
-  color: #9ca3af;
-}
-
-:deep(.p-button.p-button-text) {
-  color: #6b7280;
-}
-
-:deep(.p-button.p-button-text:hover) {
-  background: rgba(0, 0, 0, 0.03);
-  color: #10b981;
-}
-
-:deep(.p-skeleton) {
-  background-color: #e5e7eb;
-  background-image: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
-  opacity: 0.7;
-}
-
-:deep(.p-confirm-dialog .p-dialog-content) {
-  background-color: #fff;
-  color: #1f2937;
-}
-
-:deep(.p-confirm-dialog .p-dialog-footer) {
-  background-color: #f9fafb;
-  border-top: 1px solid #e5e7eb;
-  padding: 1rem 1.5rem;
-}
-
-:deep(.p-confirm-dialog .p-dialog-header) {
-  background-color: #fff;
-  color: #1f2937;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1rem 1.5rem;
-  font-weight: 600;
-}
-
-:deep(.p-confirm-dialog .p-confirm-dialog-icon) {
-  color: #f59e0b;
-}
-</style>

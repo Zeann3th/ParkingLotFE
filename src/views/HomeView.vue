@@ -92,7 +92,6 @@ const handleSignIn = async () => {
       router.push('/sign-in');
     }
   } catch (error) {
-    console.error("Refresh token failed:", error);
     router.push('/sign-in');
   }
 }

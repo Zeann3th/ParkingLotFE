@@ -2,7 +2,7 @@ import { ref } from "vue";
 
 export function useState<T>() {
   const isLoading = ref(false);
-  const isMutated = ref(false);
+  const isMutated = ref(true);
   const isDetailLoading = ref(false);
   const dialogs = ref({
     view: false,

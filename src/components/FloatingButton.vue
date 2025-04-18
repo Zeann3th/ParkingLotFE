@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import Button from 'primevue/button';
 import { defineProps, defineEmits } from 'vue';
-import { Button } from 'primevue';
+
 defineProps({
   icon: {
     type: String,
@@ -11,23 +12,9 @@ defineEmits(['click']);
 </script>
 
 <template>
-  <Button class="floating-btn shadow-lg" @click="$emit('click')">
+  <Button
+    class="bg-primary text-white hover:bg-primary/80 fixed bottom-5 right-5 w-12 h-12 p-0 flex items-center justify-center rounded-full shadow-lg text-2xl"
+    @click="$emit('click')" unstyled>
     {{ icon }}
   </Button>
 </template>
-
-<style scoped>
-.floating-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  transition: all 0.2s ease;
-}
-</style>
