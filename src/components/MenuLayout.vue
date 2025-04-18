@@ -5,6 +5,9 @@ import { ref } from 'vue';
 import { useMobile } from '@/composables/screen';
 import SideBar from './SideBar.vue';
 import MenuBar from './MenuBar.vue';
+import { memoryStorage } from '@/storage';
+import router from '@/router';
+import axios from 'axios';
 
 const { isMobile } = useMobile();
 const { role, username } = useAuth();
@@ -37,9 +40,7 @@ const userProfile: MenuItem[] = [
     icon: "pi pi-fw pi-sign-out",
     url: "#",
     command: async () => {
-      const { memoryStorage } = await import('@/storage');
-      const { default: router } = await import('@/router');
-      const axios = (await import('axios')).default;
+
       const { status } = await axios.get('auth/logout');
       if (status === 204) {
         memoryStorage.clearToken();
