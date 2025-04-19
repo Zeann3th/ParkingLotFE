@@ -67,10 +67,9 @@ const handleSubmit = async (event: Event) => {
               <label for="username" class="block text-sm font-medium text-black mb-2">
                 Username
               </label>
-              <InputText id="username" v-model="username" placeholder="Enter your username" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
-                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
-                required />
+              <InputText id="username" v-model="username" placeholder="Enter your username"
+                class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                :disabled="isSubmitted" required />
             </div>
 
             <div>
@@ -79,10 +78,9 @@ const handleSubmit = async (event: Event) => {
               </label>
               <div class="relative">
                 <InputText id="password" :type="showPassword ? 'text' : 'password'" v-model="password"
-                  placeholder="Enter your password" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white 
-                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
-                  required />
+                  placeholder="Enter your password"
+                  class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                  :disabled="isSubmitted" required />
                 <button type="button" @click="showPassword = !showPassword"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary/80 focus:outline-none">
                   <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"

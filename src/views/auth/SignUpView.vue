@@ -183,10 +183,9 @@ const resendVerificationCode = async () => {
               <label for="username" class="block text-sm font-medium text-black mb-2">
                 Username
               </label>
-              <InputText id="username" v-model="username" placeholder="Enter your username" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white
-                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-400" :disabled="isSubmitted"
-                required />
+              <InputText id="username" v-model="username" placeholder="Enter your username"
+                class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                :disabled="isSubmitted" required />
             </div>
 
             <!-- Name Field -->
@@ -194,10 +193,9 @@ const resendVerificationCode = async () => {
               <label for="name" class="block text-sm font-medium text-black mb-2">
                 Name
               </label>
-              <InputText id="name" v-model="name" placeholder="Enter your name" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white
-                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
-                required />
+              <InputText id="name" v-model="name" placeholder="Enter your name"
+                class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                :disabled="isSubmitted" required />
             </div>
 
             <!-- Email Field -->
@@ -205,10 +203,9 @@ const resendVerificationCode = async () => {
               <label for="email" class="block text-sm font-medium text-black mb-2">
                 Email
               </label>
-              <InputText id="email" v-model="email" type="email" placeholder="Enter your email" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white
-                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
-                required />
+              <InputText id="email" v-model="email" type="email" placeholder="Enter your email"
+                class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                :disabled="isSubmitted" required />
             </div>
 
             <!-- Password Field -->
@@ -218,10 +215,9 @@ const resendVerificationCode = async () => {
               </label>
               <div class="relative">
                 <InputText id="password" :type="showPassword ? 'text' : 'password'" v-model="password"
-                  placeholder="Enter your password" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white
-                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
-                  required />
+                  placeholder="Enter your password"
+                  class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                  :disabled="isSubmitted" required />
                 <button type="button" @click="showPassword = !showPassword"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 focus:outline-none">
                   <!-- SVG icons -->
@@ -248,13 +244,12 @@ const resendVerificationCode = async () => {
               </label>
               <div class="relative">
                 <InputText id="retypePassword" :type="showRetypePassword ? 'text' : 'password'" v-model="retypePassword"
-                  placeholder="Confirm your password" class="w-full py-2 px-3 bg-secondary bg-opacity-70 rounded-lg text-white
-                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                  disabled:opacity-50 disabled:cursor-not-allowed placeholder-gray-800" :disabled="isSubmitted"
-                  required />
+                  placeholder="Confirm your password"
+                  class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
+                  :disabled="isSubmitted" required />
                 <button type="button" @click="showRetypePassword = !showRetypePassword"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 focus:outline-none">
-                   <!-- SVG icons -->
+                  <!-- SVG icons -->
                   <svg v-if="showRetypePassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path
@@ -300,25 +295,24 @@ const resendVerificationCode = async () => {
       <!-- Verification Popup (Themed) -->
       <div v-else
         class="bg-secondary fixed inset-0 bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-secondary bg-opacity-90 shadow-xl rounded-xl p-8 max-w-md w-full backdrop-blur-md border border-primary/20">
+        <div
+          class="bg-secondary bg-opacity-90 shadow-xl rounded-xl p-8 max-w-md w-full backdrop-blur-md border border-primary/20">
           <div class="text-center mb-6">
             <h2 class="text-2xl font-bold text-primary mb-2">Verify Your Email</h2>
-            <p class="text-gray-800">We've sent a verification code to <span class="font-medium text-primary">{{ email }}</span></p>
+            <p class="text-gray-800">We've sent a verification code to <span class="font-medium text-primary">{{ email
+                }}</span></p>
           </div>
 
           <form @submit.prevent="handleVerifyEmail" class="space-y-6">
             <div class="flex flex-col items-center">
               <InputText v-model="verificationCode" type="text" inputmode="text" pattern="[0-9a-zA-Z]*" maxlength="8"
                 placeholder="Enter verification code"
-                class="w-full py-3 px-4 text-center text-lg bg-secondary bg-opacity-70 rounded-lg text-white
-                       focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                       placeholder-gray-400"
+                class="w-full !focus:border-primary !focus:ring !focus:ring-primary !focus:ring-opacity-50 !bg-white !text-black !px-3 !py-2"
                 autocomplete="one-time-code" autofocus />
               <p class="text-xs text-gray-600 mt-2">You can paste the code or type it</p>
             </div>
 
-            <Button type="submit" unstyled
-              class="w-full py-2 px-4 bg-primary hover:bg-primary/80 text-white rounded-lg
+            <Button type="submit" unstyled class="w-full py-2 px-4 bg-primary hover:bg-primary/80 text-white rounded-lg
                      focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-secondary
                      disabled:opacity-70 disabled:cursor-not-allowed transition duration-200"
               :disabled="!verificationCode || isSubmitted" :loading="isSubmitted">
@@ -328,7 +322,9 @@ const resendVerificationCode = async () => {
 
           <div class="mt-4 text-center text-sm text-gray-800">
             Didn't receive a code?
-            <button @click="resendVerificationCode" class="font-medium text-primary hover:text-primary/80 disabled:opacity-70 disabled:cursor-not-allowed" :disabled="isResending">
+            <button @click="resendVerificationCode"
+              class="font-medium text-primary hover:text-primary/80 disabled:opacity-70 disabled:cursor-not-allowed"
+              :disabled="isResending">
               {{ isResending ? "Sending..." : "Resend Code" }}
             </button>
           </div>
@@ -342,7 +338,8 @@ const resendVerificationCode = async () => {
 .backdrop-blur-sm {
   backdrop-filter: blur(4px);
 }
+
 .backdrop-blur-md {
-    backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 </style>

@@ -1,5 +1,10 @@
-export interface Notification {
+export interface BaseModel {
   id: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notification extends BaseModel {
   from: {
     id: number;
     username: string;
@@ -7,45 +12,18 @@ export interface Notification {
   };
   message: string;
   status: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
-export interface NotificationResponse {
-  count: number;
-  data: Notification[];
-  message?: string;
-}
-
-export type CheckIn = {
-  sectionId: number | string;
-  ticketId: number | string;
-  plate: string;
-  type: string;
-};
-
-export type CheckOut = {
-  sectionId: number | string;
-  ticketId: number | string;
-  plate: string;
-};
-
-export type Residence = {
-  id: number;
+export interface Residence extends BaseModel {
   building: string;
   room: number;
   vehicles?: Vehicle[];
   residents?: Resident[];
-  createdAt: string;
-  updatedAt: string;
 };
 
-export type Vehicle = {
-  id: number;
+export interface Vehicle extends BaseModel {
   plate: string;
   type: string;
-  createdAt: string;
-  updatedAt: string;
 };
 
 export type Resident = {
@@ -53,28 +31,23 @@ export type Resident = {
   name: string;
 };
 
-export interface ResidenceResponse {
-  count: number;
-  data: Residence[];
-  message?: string;
-}
+export type TicketType = 'DAILY' | 'MONTHLY' | 'RESERVED';
+
+export type TicketStatus = 'AVAILABLE' | 'INUSE' | 'LOST';
+
+export type VehicleType = 'MOTORBIKE' | 'CAR';
 
 export interface Pricing {
-  type: 'DAILY' | 'MONTHLY' | 'RESERVED';
-  vehicleType: 'MOTORBIKE' | 'CAR';
+  type: TicketType;
+  vehicleType: VehicleType;
   price: number;
 }
 
-export type TicketType = 'DAILY' | 'MONTHLY' | 'RESERVED';
-
-export interface Ticket {
-  id: number;
+export interface Ticket extends BaseModel {
   type: TicketType;
-  status: "AVAILABLE" | "INUSE" | "LOST";
+  status: TicketStatus;
   vehicleId?: number;
   userId?: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface CreateTicket {
@@ -85,28 +58,47 @@ export interface CreateTicket {
   slot?: number;
 }
 
-export interface TicketResponse {
-  count: number;
-  data: Ticket[];
-  message?: string;
+export interface UpdateTicket {
+  type: TicketType;
+  status: TicketStatus;
 }
 
-export interface Transaction {
-  id: number;
+export interface ReserveTicket {
+  sectionId: number;
+  slot: number;
+}
+
+export interface Transaction extends BaseModel {
   userId: number;
   amount: number;
   status: "PENDING" | "PAID";
   month: number;
   year: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
-export interface TransactionResponse {
+export interface BaseParking {
+  sectionId: number | string;
+  ticketId: number | string;
+  plate: string;
+}
+
+export interface CheckIn extends BaseParking {
+  type: string;
+}
+
+export interface CheckOut extends BaseParking { }
+
+export interface Response<T> {
   count: number;
-  data: Transaction[];
+  data: T[];
   message?: string;
 }
+
+export interface NotificationResponse extends Response<Notification> { }
+export interface TransactionResponse extends Response<Transaction> { }
+export interface TicketResponse extends Response<Ticket> { }
+export interface ResidenceResponse extends Response<Residence> { }
+
 
 
 
