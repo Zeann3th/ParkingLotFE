@@ -205,7 +205,7 @@ const debouncedVehicleSearch = debounce(async (value: string) => {
     isVehicleDropdownVisible.value = false;
     vehicles.value = [];
   }
-}, 300);
+}, 2000);
 
 const debouncedUserSearch = debounce(async (value: string | null) => {
   if (user.value && (value !== user.value.name)) {
@@ -231,7 +231,7 @@ const debouncedUserSearch = debounce(async (value: string | null) => {
     isUserDropdownVisible.value = false;
     users.value = [];
   }
-}, 300);
+}, 2000);
 
 onMounted(() => {
   getAllTickets();
