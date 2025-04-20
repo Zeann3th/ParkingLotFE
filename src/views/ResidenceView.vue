@@ -17,7 +17,7 @@ const toast = useToast();
 const route = useRoute();
 
 const isPrivilleged = computed(() => {
-  const {role} = useAuth();
+  const { role } = useAuth();
   return role.value === "ADMIN" || role.value === "SECURITY";
 })
 
@@ -25,7 +25,6 @@ const getAllResidences = async () => {
   isLoading.value = true;
   try {
     const response = await residenceService.getAll(page.value, limit.value, { cache: !isMutated.value && !!route.query.page });
-    console.log(response.data)
     itemList.value = response.data;
     maxPage.value = response.count;
     isMutated.value = false;

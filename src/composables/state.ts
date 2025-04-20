@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-export function useState<T>() {
+export function useState<T>(opts?: { page?: number; limit?: number; }) {
   const isLoading = ref(false);
   const isMutated = ref(true);
   const isDetailLoading = ref(false);
@@ -18,8 +18,8 @@ export function useState<T>() {
   };
   const selectedItem = ref<T | null>(null);
   const itemList = ref<T[]>([]);
-  const page = ref(1);
-  const limit = ref(10);
+  const page = ref(opts?.page || 1);
+  const limit = ref(opts?.limit || 10);
   const maxPage = ref(1);
 
   return {

@@ -1,7 +1,22 @@
+export type Role = "ADMIN" | "USER" | "SECURITY";
+
+export type TicketType = 'DAILY' | 'MONTHLY' | 'RESERVED';
+
+export type TicketStatus = 'AVAILABLE' | 'INUSE' | 'LOST';
+
+export type VehicleType = 'MOTORBIKE' | 'CAR';
+
 export interface BaseModel {
   id: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface User extends Omit<BaseModel, "createdAt" | "updatedAt"> {
+  username: string;
+  name: string;
+  email: string;
+  role: Role;
 }
 
 export interface Notification extends BaseModel {
@@ -30,12 +45,6 @@ export type Resident = {
   id: number;
   name: string;
 };
-
-export type TicketType = 'DAILY' | 'MONTHLY' | 'RESERVED';
-
-export type TicketStatus = 'AVAILABLE' | 'INUSE' | 'LOST';
-
-export type VehicleType = 'MOTORBIKE' | 'CAR';
 
 export interface Pricing {
   type: TicketType;

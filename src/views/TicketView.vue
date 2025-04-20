@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Dialog, Button, useToast } from 'primevue';
-import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
-import { type CreateTicket, type Ticket } from '@/types';
+import { type User, type CreateTicket, type Ticket, type Vehicle } from '@/types';
 import { ticketService } from '@/services/ticket.service';
 import Skeleton from '@/components/Skeleton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
@@ -11,12 +10,17 @@ import FloatingButton from '@/components/FloatingButton.vue';
 import { useState } from '@/composables/state';
 import Title from '@/components/Title.vue';
 import InputText from '@/components/InputText.vue';
+import InputNumber from '@/components/InputNumber.vue';
 import { useAuth } from '@/composables/auth';
+import { userService } from '@/services/user.service';
+import { vehicleService } from '@/services/vehicle.service';
 
-const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>();
+const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>({ limit: 20 });
 const isEditing = ref(false);
+const scrollContainer = ref<HTMLElement | null>(null);
+const user = ref<User | null>(null);
+const vehicle = ref<Vehicle | null>(null);
 const toast = useToast();
-const route = useRoute();
 
 const isPrivilledged = computed(() => {
   const { role } = useAuth();
@@ -45,17 +49,13 @@ const getAllTickets = async () => {
   }
 };
 
-watch(() => route.query.page, (newPage) => {
-  page.value = parseInt(newPage as string) || 1;
-  getAllTickets();
-}, { immediate: true });
-
 const getTicketDetail = async (id: number) => {
   selectedItem.value = null;
   openDialog("view");
   try {
-    const response = await ticketService.getById(id);
-    selectedItem.value = response;
+    selectedItem.value = await ticketService.getById(id);
+    if (selectedItem.value.userId) user.value = await userService.getById(selectedItem.value.userId)
+    if (selectedItem.value.vehicleId) vehicle.value = await vehicleService.getById(selectedItem.value.vehicleId)
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load ticket details', life: 3000, });
     closeDialog("view");
@@ -117,11 +117,44 @@ const getStatusTextClasses = (status: string) => {
   }
 };
 
+const handleScroll = () => {
+
+  if (!isLoading.value && page.value < maxPage.value) {
+    console.log("Reached bottom, loading more...");
+    page.value += 1;
+    isLoading.value = true;
+
+    ticketService.getAll(page.value, limit.value, { cache: !isMutated.value })
+      .then((response) => {
+        if (response.data && response.data.length > 0) {
+          itemList.value.push(...response.data);
+        }
+        maxPage.value = response.count;
+      })
+      .catch(() => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load more tickets', life: 3000 });
+      })
+      .finally(() => {
+        isLoading.value = false;
+      });
+  }
+};
+
+onMounted(() => {
+  getAllTickets();
+  scrollContainer.value?.addEventListener('scroll', handleScroll);
+});
+
+onBeforeUnmount(() => {
+  scrollContainer.value?.removeEventListener('scroll', handleScroll);
+});
+
 </script>
 
 <template>
   <MenuLayout>
-    <div class="min-h-screen !bg-gray-50 dark:!bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+    <div ref="scrollContainer"
+      class="min-h-screen !bg-gray-50 dark:!bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
       <div class="max-w-7xl mx-auto">
         <Title name="Tickets" subtext="View and manage parking tickets" @click="getAllTickets" class="mb-6 md:mb-8" />
 
@@ -202,15 +235,17 @@ const getStatusTextClasses = (status: string) => {
               }}</span>
               <InputText v-else-if="isEditing && selectedItem" v-model="selectedItem.status" inputId="ticketStatus" />
               <span></span>
-              <!-- Vehicle ID -->
-              <template v-if="selectedItem.vehicleId">
-                <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Vehicle ID</span>
-                <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ selectedItem.vehicleId }}</span>
+              <!-- Vehicle -->
+              <template v-if="vehicle">
+                <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Vehicle</span>
+                <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ vehicle.plate }}
+                  ({{ vehicle.type.toLowerCase() }})</span>
               </template>
-              <!-- User ID -->
-              <template v-if="selectedItem.userId">
-                <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">User ID</span>
-                <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ selectedItem.userId }}</span>
+              <!-- User -->
+              <template v-if="user">
+                <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">User</span>
+                <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ user.name }} ({{ user.username
+                }})</span>
               </template>
             </div>
           </div>
