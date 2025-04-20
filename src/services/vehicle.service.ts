@@ -12,12 +12,12 @@ export const vehicleService = {
     return response.data;
   },
   async search(opts: { plate?: string; }): Promise<Vehicle[]> {
-    const response = await axios.get<Vehicle[]>("/vehicles/search", {
+    const response = await axios.get<{ count: number, data: Vehicle[]; }>("/vehicles/search", {
       headers: {
         Authorization: `Bearer ${memoryStorage.getToken()}`,
       },
       params: opts,
     });
-    return response.data;
+    return response.data.data;
   }
 };

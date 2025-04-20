@@ -14,16 +14,23 @@ import InputNumber from '@/components/InputNumber.vue';
 import { useAuth } from '@/composables/auth';
 import { userService } from '@/services/user.service';
 import { vehicleService } from '@/services/vehicle.service';
+import debounce from 'lodash.debounce';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>({ limit: 20 });
 const isEditing = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
+
+const isUserDropdownVisible = ref(false);
 const user = ref<User | null>(null);
 const users = ref<User[]>([]);
 const userInput = ref<string | null>(null);
+
+const isVehicleDropdownVisible = ref(false);
+const vehicles = ref<Vehicle[]>([]);
+const vehicleInput = ref<string | null>(null);
 const vehicle = ref<Vehicle | null>(null);
+
 const toast = useToast();
-const isDropdownVisible = ref(false);
 
 const isPrivilledged = computed(() => {
   const { role } = useAuth();
@@ -125,7 +132,6 @@ const getStatusTextClasses = (status: string) => {
 };
 
 const handleScroll = () => {
-
   if (!isLoading.value && page.value < maxPage.value) {
     console.log("Reached bottom, loading more...");
     page.value += 1;
@@ -150,57 +156,122 @@ const handleScroll = () => {
 const selectUser = (selectedUser: User) => {
   user.value = selectedUser;
   userInput.value = selectedUser.name;
-  isDropdownVisible.value = false;
+  isUserDropdownVisible.value = false;
 }
 
-const closeDropdown = (event: MouseEvent) => {
+const closeUserDropdown = (event: MouseEvent) => {
   const userDropdown = document.getElementById('user-dropdown');
   const userInput = document.getElementById('user-input');
 
   if (userDropdown &&
     !userDropdown.contains(event.target as Node) &&
     !userInput?.contains(event.target as Node)) {
-    isDropdownVisible.value = false;
+    isUserDropdownVisible.value = false;
   }
 }
 
-onMounted(() => {
-  getAllTickets();
-  scrollContainer.value?.addEventListener('scroll', handleScroll);
-  document.addEventListener('click', closeDropdown);
-});
+const selectVehicle = (selectedVehicle: Vehicle) => {
+  vehicle.value = selectedVehicle;
+  vehicleInput.value = selectedVehicle.plate;
+  createTicketPayload.value.vehicleId = selectedVehicle.id;
+  isVehicleDropdownVisible.value = false;
+}
 
-onBeforeUnmount(() => {
-  scrollContainer.value?.removeEventListener('scroll', handleScroll);
-  document.removeEventListener('click', closeDropdown);
-});
+const closeVehicleDropdown = (event: MouseEvent) => {
+  const vehicleDropdown = document.getElementById('vehicle-dropdown');
+  const vehicleInputEl = document.getElementById('vehicle-input');
 
-watch(userInput, async (newVal) => {
-  if (user.value && (newVal !== user.value.name)) {
+  if (vehicleDropdown &&
+    !vehicleDropdown.contains(event.target as Node) &&
+    !vehicleInputEl?.contains(event.target as Node)) {
+    isVehicleDropdownVisible.value = false;
+  }
+}
+
+const debouncedVehicleSearch = debounce(async (value: string) => {
+  if (vehicle.value && (value !== vehicle.value.plate)) {
+    vehicle.value = null;
+    createTicketPayload.value.vehicleId = undefined;
+  }
+
+  if (value) {
+    try {
+      vehicles.value = await vehicleService.search({ plate: value });
+      isVehicleDropdownVisible.value = vehicles.value.length > 0;
+    } catch (error) {
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load vehicles', life: 3000 });
+    }
+  } else {
+    isVehicleDropdownVisible.value = false;
+    vehicles.value = [];
+  }
+}, 300);
+
+const debouncedUserSearch = debounce(async (value: string | null) => {
+  if (user.value && (value !== user.value.name)) {
     user.value = null;
     createTicketPayload.value.userId = undefined;
   }
 
   let params: { email?: string, name?: string } = {};
-  if (newVal) {
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVal)) {
-      params.email = newVal;
+  if (value) {
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      params.email = value;
     } else {
-      params.name = newVal;
+      params.name = value;
     }
     try {
       const res = await userService.search(params);
       users.value = res;
-      isDropdownVisible.value = users.value.length > 0;
+      isUserDropdownVisible.value = users.value.length > 0;
     } catch (error) {
       toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load users', life: 3000, });
     }
   } else {
-    isDropdownVisible.value = false;
+    isUserDropdownVisible.value = false;
     users.value = [];
   }
-})
+}, 300);
 
+onMounted(() => {
+  getAllTickets();
+  scrollContainer.value?.addEventListener('scroll', handleScroll);
+  document.addEventListener('click', closeUserDropdown);
+  document.addEventListener('click', closeVehicleDropdown);
+});
+
+onBeforeUnmount(() => {
+  scrollContainer.value?.removeEventListener('scroll', handleScroll);
+  document.removeEventListener('click', closeUserDropdown);
+  document.removeEventListener('click', closeVehicleDropdown);
+});
+
+watch(userInput, (newVal) => {
+  if (newVal) {
+    debouncedUserSearch(newVal);
+  } else {
+    isUserDropdownVisible.value = false;
+    users.value = [];
+  }
+});
+
+watch(vehicleInput, (newVal) => {
+  if (newVal) {
+    debouncedVehicleSearch(newVal);
+  } else {
+    isVehicleDropdownVisible.value = false;
+    vehicles.value = [];
+  }
+});
+
+const closeCreateDialog = () => {
+  closeDialog("create");
+  users.value = [];
+  user.value = null;
+  userInput.value = null;
+  vehicles.value = [];
+  vehicleInput.value = null;
+}
 </script>
 
 <template>
@@ -331,8 +402,7 @@ watch(userInput, async (newVal) => {
             <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Create New Ticket</h2>
             <Button icon="pi pi-times"
               class="w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:ring-2 focus:!ring-primary-500/50"
-              @click="() => { closeDialog('create'); user = null; userInput = null }" aria-label="Close dialog"
-              unstyled />
+              @click="closeCreateDialog" aria-label="Close dialog" unstyled />
           </div>
 
           <!-- Content Area / Form -->
@@ -363,7 +433,7 @@ watch(userInput, async (newVal) => {
               </label>
               <div class="relative">
                 <InputText v-model="userInput" inputId="user-input" placeholder="Enter User name or Email"
-                  @focus="isDropdownVisible = true" />
+                  @focus="isUserDropdownVisible = true" />
                 <!-- Selected User Chip -->
                 <div v-if="user" class="mt-2">
                   <span
@@ -378,7 +448,7 @@ watch(userInput, async (newVal) => {
                   </span>
                 </div>
                 <!-- User Dropdown -->
-                <div id="user-dropdown" v-if="isDropdownVisible"
+                <div id="user-dropdown" v-if="isUserDropdownVisible"
                   class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                   <div v-if="users.length === 0" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
                     No users found
@@ -397,11 +467,45 @@ watch(userInput, async (newVal) => {
               </div>
             </div>
 
-            <!-- Vehicle Id -->
-            <div>
-              <label for="vehicleId" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Vehicle
-                (Optional)</label>
-              <InputNumber v-model="createTicketPayload.vehicleId" inputId="vehicleId" placeholder="Enter Vehicle ID" />
+            <!-- Vehicle with Dropdown -->
+            <div class="relative">
+              <label for="vehicle-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                Vehicle (Optional)
+              </label>
+              <div class="relative">
+                <InputText v-model="vehicleInput" inputId="vehicle-input" placeholder="Enter Vehicle plate"
+                  @focus="isVehicleDropdownVisible = true" />
+                <!-- Selected Vehicle Chip -->
+                <div v-if="vehicle" class="mt-2">
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                    {{ vehicle.plate }}
+                    <button type="button"
+                      class="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      @click="vehicle = null; vehicleInput = ''; createTicketPayload.vehicleId = undefined">
+                      <span class="sr-only">Remove vehicle</span>
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </span>
+                </div>
+                <!-- Vehicle Dropdown -->
+                <div id="vehicle-dropdown" v-if="isVehicleDropdownVisible"
+                  class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                  <div v-if="vehicles.length === 0" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    No vehicles found
+                  </div>
+                  <div v-for="vehicleOption in vehicles" :key="vehicleOption.id"
+                    class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    @click="selectVehicle(vehicleOption)">
+                    <div class="flex items-center">
+                      <span class="font-normal block truncate">{{ vehicleOption.plate }}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                      {{ vehicleOption.type }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Section Id -->
@@ -417,19 +521,18 @@ watch(userInput, async (newVal) => {
                 (Optional)</label>
               <InputNumber v-model="createTicketPayload.slot" inputId="slot" placeholder="Enter Slot Number" />
             </div>
-          </div>
 
-          <!-- Footer/Actions -->
-          <div
-            class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button label="Save" icon="pi pi-check" class="p-button-sm p-button-outlined
+            <!-- Footer/Actions -->
+            <div
+              class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
+              <Button label="Save" icon="pi pi-check" class="p-button-sm p-button-outlined
                      !border-primary-500 !text-primary-600 hover:!bg-primary-50
                      dark:!border-primary-400 dark:!text-primary-300 dark:hover:!bg-primary-900/20
                      focus:!ring-2 focus:!ring-primary-500/50" @click="createTicket" />
-            <Button label="Cancel" class="p-button-sm p-button-text
+              <Button label="Cancel" class="p-button-sm p-button-text
                      !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
-                     focus:!ring-2 focus:!ring-gray-500/50"
-              @click="() => { closeDialog('create'); user = null; userInput = null }" />
+                     focus:!ring-2 focus:!ring-gray-500/50" @click="closeCreateDialog" />
+            </div>
           </div>
         </Dialog>
       </div>
