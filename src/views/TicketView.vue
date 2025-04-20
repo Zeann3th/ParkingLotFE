@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Dialog, Button, useToast } from 'primevue';
 import MenuLayout from '@/components/MenuLayout.vue';
 import { type User, type CreateTicket, type Ticket, type Vehicle } from '@/types';
@@ -19,8 +19,11 @@ const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDi
 const isEditing = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
 const user = ref<User | null>(null);
+const users = ref<User[]>([]);
+const userInput = ref<string | null>(null);
 const vehicle = ref<Vehicle | null>(null);
 const toast = useToast();
+const isDropdownVisible = ref(false);
 
 const isPrivilledged = computed(() => {
   const { role } = useAuth();
@@ -64,11 +67,15 @@ const getTicketDetail = async (id: number) => {
 
 const createTicket = async () => {
   try {
+    createTicketPayload.value.userId = user.value?.id;
     await ticketService.create(createTicketPayload.value)
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to create ticket', life: 3000, });
   } finally {
     closeDialog("create");
+    user.value = null;
+    userInput.value = null;
+    users.value = [];
     getAllTickets();
   }
 }
@@ -140,14 +147,59 @@ const handleScroll = () => {
   }
 };
 
+const selectUser = (selectedUser: User) => {
+  user.value = selectedUser;
+  userInput.value = selectedUser.name;
+  isDropdownVisible.value = false;
+}
+
+const closeDropdown = (event: MouseEvent) => {
+  const userDropdown = document.getElementById('user-dropdown');
+  const userInput = document.getElementById('user-input');
+
+  if (userDropdown &&
+    !userDropdown.contains(event.target as Node) &&
+    !userInput?.contains(event.target as Node)) {
+    isDropdownVisible.value = false;
+  }
+}
+
 onMounted(() => {
   getAllTickets();
   scrollContainer.value?.addEventListener('scroll', handleScroll);
+  document.addEventListener('click', closeDropdown);
 });
 
 onBeforeUnmount(() => {
   scrollContainer.value?.removeEventListener('scroll', handleScroll);
+  document.removeEventListener('click', closeDropdown);
 });
+
+watch(userInput, async (newVal) => {
+  if (user.value && (newVal !== user.value.name)) {
+    user.value = null;
+    createTicketPayload.value.userId = undefined;
+  }
+
+  let params: { email?: string, name?: string } = {};
+  if (newVal) {
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVal)) {
+      params.email = newVal;
+    } else {
+      params.name = newVal;
+    }
+    try {
+      const res = await userService.search(params);
+      users.value = res;
+      isDropdownVisible.value = users.value.length > 0;
+    } catch (error) {
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load users', life: 3000, });
+    }
+  } else {
+    isDropdownVisible.value = false;
+    users.value = [];
+  }
+})
 
 </script>
 
@@ -279,7 +331,8 @@ onBeforeUnmount(() => {
             <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Create New Ticket</h2>
             <Button icon="pi pi-times"
               class="w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:ring-2 focus:!ring-primary-500/50"
-              @click="closeDialog('create')" aria-label="Close dialog" unstyled />
+              @click="() => { closeDialog('create'); user = null; userInput = null }" aria-label="Close dialog"
+              unstyled />
           </div>
 
           <!-- Content Area / Form -->
@@ -303,11 +356,45 @@ onBeforeUnmount(() => {
               </select>
             </div>
 
-            <!-- User Id -->
-            <div>
-              <label for="userId" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">User
-                (Optional)</label>
-              <InputNumber v-model="createTicketPayload.userId" inputId="userId" placeholder="Enter User ID" />
+            <!-- User with Dropdown -->
+            <div class="relative">
+              <label for="user-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                User (Optional)
+              </label>
+              <div class="relative">
+                <InputText v-model="userInput" inputId="user-input" placeholder="Enter User name or Email"
+                  @focus="isDropdownVisible = true" />
+                <!-- Selected User Chip -->
+                <div v-if="user" class="mt-2">
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                    {{ user.name }}
+                    <button type="button"
+                      class="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      @click="user = null; userInput = ''; createTicketPayload.userId = undefined">
+                      <span class="sr-only">Remove user</span>
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </span>
+                </div>
+                <!-- User Dropdown -->
+                <div id="user-dropdown" v-if="isDropdownVisible"
+                  class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                  <div v-if="users.length === 0" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    No users found
+                  </div>
+                  <div v-for="userOption in users" :key="userOption.id"
+                    class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    @click="selectUser(userOption)">
+                    <div class="flex items-center">
+                      <span class="font-normal block truncate">{{ userOption.name }}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                      {{ userOption.username }} - {{ userOption.email }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Vehicle Id -->
@@ -341,7 +428,8 @@ onBeforeUnmount(() => {
                      focus:!ring-2 focus:!ring-primary-500/50" @click="createTicket" />
             <Button label="Cancel" class="p-button-sm p-button-text
                      !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
-                     focus:!ring-2 focus:!ring-gray-500/50" @click="closeDialog('create')" />
+                     focus:!ring-2 focus:!ring-gray-500/50"
+              @click="() => { closeDialog('create'); user = null; userInput = null }" />
           </div>
         </Dialog>
       </div>
