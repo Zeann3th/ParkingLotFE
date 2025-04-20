@@ -120,9 +120,3 @@ const handleSubmit = async (event: Event) => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.input-text:focus {
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
-}
-</style>
