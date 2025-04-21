@@ -54,6 +54,13 @@ export const ticketService = {
     });
     return response.data;
   },
+  async delete(id: number): Promise<void> {
+    await axios.delete<{}>(`/tickets/${id}`, {
+      headers: {
+        Authorization: `Bearer ${memoryStorage.getToken()}`,
+      }
+    });
+  }
 }
 
 

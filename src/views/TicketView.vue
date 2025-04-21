@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Dialog, Button, useToast } from 'primevue';
+import { Dialog, Button, useToast, useConfirm, ConfirmDialog } from 'primevue';
 import MenuLayout from '@/components/MenuLayout.vue';
 import { type User, type CreateTicket, type Ticket, type Vehicle } from '@/types';
 import { ticketService } from '@/services/ticket.service';
@@ -20,6 +20,12 @@ const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDi
 const isEditing = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
 
+const isRegistering = ref(false);
+const registerTicketPayload = ref({
+  sectionId: 0,
+  slot: 0,
+})
+
 const isUserDropdownVisible = ref(false);
 const user = ref<User | null>(null);
 const users = ref<User[]>([]);
@@ -31,11 +37,17 @@ const vehicleInput = ref<string | null>(null);
 const vehicle = ref<Vehicle | null>(null);
 
 const toast = useToast();
+const confirm = useConfirm();
 
 const isPrivilledged = computed(() => {
   const { role } = useAuth();
   return role.value === 'ADMIN' || role.value === 'SECURITY';
-})
+});
+
+const isAdmin = computed(() => {
+  const { role } = useAuth();
+  return role.value === 'ADMIN';
+});
 
 const createTicketPayload = ref<CreateTicket>({
   type: null,
@@ -96,6 +108,61 @@ const updateTicket = async () => {
     })
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update ticket', life: 3000, });
+  } finally {
+    isEditing.value = false;
+    closeDialog("view");
+    getAllTickets();
+  }
+}
+
+const deleteTicket = (id: number | undefined) => {
+  if (!id) return;
+  confirm.require({
+    message: 'Are you sure you want to delete this ticket?',
+    header: 'Delete Confirmation',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      try {
+        await ticketService.delete(id);
+        isMutated.value = true;
+      } catch (error) {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to delete ticket',
+          life: 3000,
+        });
+      } finally {
+        closeDialog("view");
+        getAllTickets();
+      }
+    }
+  });
+};
+
+const cancelTicketSubscription = async () => {
+  if (!selectedItem.value) return;
+  try {
+    await ticketService.unsubscribe(selectedItem.value.id);
+
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to cancel ticket subscription', life: 3000, });
+  } finally {
+    closeDialog("view");
+    getAllTickets();
+  }
+}
+
+const registerTicket = async () => {
+  if (!selectedItem.value || registerTicketPayload.value.sectionId == 0 || registerTicketPayload.value.slot == 0) return;
+  try {
+    await ticketService.subcribe(selectedItem.value.id, {
+      sectionId: registerTicketPayload.value.sectionId,
+      slot: registerTicketPayload.value.slot,
+    })
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to register ticket', life: 3000, });
   } finally {
     isEditing.value = false;
     closeDialog("view");
@@ -349,15 +416,25 @@ const closeCreateDialog = () => {
               <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Type</span>
               <span v-if="!isEditing" class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{
                 getTypeLabel(selectedItem.type) }}</span>
-              <InputText v-else-if="isEditing && selectedItem" v-model="selectedItem.type" inputId="ticketType" />
-              <span></span>
+              <select class="col-span-2 text-sm bg-white text-black" v-else-if="isEditing && selectedItem"
+                v-model="selectedItem.type">
+                <option disabled value="">Select Type</option>
+                <option v-for="type in ['DAILY', 'MONTHLY', 'RESERVED']" :key="type" :value="type">
+                  {{ getTypeLabel(type) }}
+                </option>
+              </select>
               <!-- Status -->
               <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
               <span v-if="!isEditing" :class="getStatusTextClasses(selectedItem.status)" class="col-span-2 text-sm">{{
                 selectedItem.status
               }}</span>
-              <InputText v-else-if="isEditing && selectedItem" v-model="selectedItem.status" inputId="ticketStatus" />
-              <span></span>
+              <select class="col-span-2 text-sm bg-white text-black" v-else-if="isEditing && selectedItem"
+                v-model="selectedItem.status">
+                <option disabled value="">Select Status</option>
+                <option v-for="status in ['AVAILABLE', 'INUSE', 'LOST', 'CANCELED']" :key="status" :value="status">
+                  {{ status }}
+                </option>
+              </select>
               <!-- Vehicle -->
               <template v-if="vehicle">
                 <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Vehicle</span>
@@ -378,19 +455,48 @@ const closeCreateDialog = () => {
           <!-- Footer/Actions -->
           <div
             class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button v-if="isPrivilledged && !isEditing" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
-                     !border-primary-500 !text-primary-600 hover:!bg-primary-50
-                     dark:!border-primary-400 dark:!text-primary-300 dark:hover:!bg-primary-900/20
-                     focus:!ring-2 focus:!ring-primary-500/50" @click="isEditing = true" />
-            <Button v-if="isPrivilledged && isEditing" label="Save" icon="pi pi-check" class="p-button-sm p-button-outlined
-                     !border-primary-500 !text-primary-600 hover:!bg-primary-50
-                     dark:!border-primary-400 dark:!text-primary-300 dark:hover:!bg-primary-900/20
-                     focus:!ring-2 focus:!ring-primary-500/50" @click="updateTicket" />
-            <Button label="Close" class="p-button-sm p-button-text
-                     !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
-                     focus:!ring-2 focus:!ring-gray-500/50"
+            <Button
+              v-if="(selectedItem?.type == 'MONTHLY' || selectedItem?.type == 'RESERVED') && selectedItem.status != 'CANCELED'"
+              label="Cancel" icon="pi pi-calendar-minus"
+              class="p-button-sm p-button-outlined !border-accent !bg-accent !text-white hover:!bg-accent/80 focus:!ring-2 focus:!ring-accent"
+              @click="cancelTicketSubscription" />
+            <Button v-else-if="selectedItem?.status == 'CANCELED'" label="Reserve" icon="pi pi-list-check"
+              class="p-button-sm p-button-outlined !border-accent !bg-accent !text-white hover:!bg-accent/80 focus:!ring-2 focus:!ring-accent"
+              @click="isRegistering = true" />
+            <Button v-if="isPrivilledged && !isEditing" label="Edit" icon="pi pi-pencil"
+              class="p-button-sm p-button-outlined !border-yellow-500 !bg-yellow-500 !text-white hover:!bg-yellow-700 focus:!ring-2 focus:!ring-yellow-500"
+              @click="isEditing = true" />
+            <Button v-else-if="isPrivilledged && isEditing" label="Save" icon="pi pi-save"
+              class="p-button-sm p-button-outlined !border-green-500 !bg-green-500 !text-white hover:!bg-green-700 focus:!ring-2 focus:!ring-green-500"
+              @click="updateTicket" />
+            <Button v-if="isAdmin" label="Delete" icon="pi pi-times"
+              class="p-button-sm p-button-outlined !border-red-500 !bg-red-500 !text-white hover:!bg-red-700 focus:!ring-2 focus:!ring-red-500"
+              @click="deleteTicket(selectedItem?.id)" />
+            <Button label="Close"
+              class="p-button-sm p-button-text !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-gray-500/50"
               @click="() => { closeDialog('view'); isEditing = false }" />
           </div>
+        </Dialog>
+
+        <Dialog v-model:visible="isRegistering" modal :closable="true" :showHeader="false"
+          class="!bg-white dark:!bg-gray-800 !text-black !rounded-xl !shadow-xl !border !border-gray-200 dark:!border-gray-700"
+          :style="{ width: '95%', maxWidth: '550px' }">
+          <div v-if="selectedItem" class="p-5 md:p-6">
+            <div class="grid grid-cols-3 gap-x-4 gap-y-4">
+              <!-- Section ID-->
+              <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Section ID</span>
+              <InputNumber v-model="registerTicketPayload.sectionId" inputId="sectionId" class="col-span-2" />
+              <!-- Slot -->
+              <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Slot</span>
+              <InputNumber v-model="registerTicketPayload.slot" inputId="slot" class="col-span-2" />
+            </div>
+          </div>
+          <Button label="Save" icon="pi pi-save"
+            class="p-button-sm p-button-outlined !border-green-500 !bg-green-500 !text-white hover:!bg-green-700 focus:!ring-2 focus:!ring-green-500"
+            @click="registerTicket" />
+          <Button label="Close"
+            class="p-button-sm p-button-text !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-gray-500/50"
+            @click="isRegistering = false" />
         </Dialog>
 
         <!-- Create Ticket Dialog -->
@@ -540,6 +646,8 @@ const closeCreateDialog = () => {
 
     <FloatingButton v-if="isPrivilledged" icon="+" @click="openDialog('create')" aria-label="Add new ticket" />
   </MenuLayout>
+  <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
+    rejectClass="!bg-red-500 !hover:bg-red-700 !text-white" />
 </template>
 
 <style scoped>

@@ -2,7 +2,7 @@ export type Role = "ADMIN" | "USER" | "SECURITY";
 
 export type TicketType = 'DAILY' | 'MONTHLY' | 'RESERVED';
 
-export type TicketStatus = 'AVAILABLE' | 'INUSE' | 'LOST';
+export type TicketStatus = 'AVAILABLE' | 'INUSE' | 'LOST' | 'CANCELED';
 
 export type VehicleType = 'MOTORBIKE' | 'CAR';
 

@@ -193,7 +193,7 @@ const handleSignIn = async () => {
                 {{ new Intl.NumberFormat('vi-VN').format(data.price) }} <span
                   class="text-sm text-gray-500 dark:text-gray-400">VND</span>
               </span>
-              <span v-if="data.type === 'DAILY'" class="block text-xs text-gray-500 dark:text-gray-400">/ Day</span>
+              <span v-if="data.type === 'DAILY'" class="block text-xs text-gray-500 dark:text-gray-400">/ Hour</span>
               <span v-else-if="data.type === 'MONTHLY'" class="block text-xs text-gray-500 dark:text-gray-400">/
                 Month</span>
               <span v-else-if="data.type === 'RESERVED'" class="block text-xs text-gray-500 dark:text-gray-400">/
