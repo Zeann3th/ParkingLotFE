@@ -19,6 +19,13 @@ export interface User extends Omit<BaseModel, "createdAt" | "updatedAt"> {
   role: Role;
 }
 
+export interface Section extends BaseModel {
+  name: string;
+  capacity: number;
+}
+
+export interface CreateSection extends Omit<Section, "id" | "createdAt" | "updatedAt"> { };
+
 export interface Notification extends BaseModel {
   from: {
     id: number;
@@ -35,6 +42,8 @@ export interface Residence extends BaseModel {
   vehicles?: Vehicle[];
   residents?: Resident[];
 };
+
+export interface CreateResidence extends Omit<Residence, "id" | "createdAt" | "updatedAt"> { };
 
 export interface Vehicle extends BaseModel {
   plate: string;
@@ -107,7 +116,6 @@ export interface NotificationResponse extends Response<Notification> { }
 export interface TransactionResponse extends Response<Transaction> { }
 export interface TicketResponse extends Response<Ticket> { }
 export interface ResidenceResponse extends Response<Residence> { }
-
 
 
 

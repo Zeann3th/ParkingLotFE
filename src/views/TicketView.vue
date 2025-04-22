@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Dialog, Button, useToast, useConfirm, ConfirmDialog } from 'primevue';
 import MenuLayout from '@/components/MenuLayout.vue';
-import { type User, type CreateTicket, type Ticket, type Vehicle } from '@/types';
+import { type User, type CreateTicket, type Ticket, type Vehicle, type ReserveTicket } from '@/types';
 import { ticketService } from '@/services/ticket.service';
 import Skeleton from '@/components/Skeleton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
@@ -21,7 +21,7 @@ const isEditing = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
 
 const isRegistering = ref(false);
-const registerTicketPayload = ref({
+const registerTicketPayload = ref<ReserveTicket>({
   sectionId: 0,
   slot: 0,
 })
@@ -65,7 +65,7 @@ const getAllTickets = async () => {
     maxPage.value = response.count;
     isMutated.value = false;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load tickets', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isLoading.value = false;
   }
@@ -79,7 +79,7 @@ const getTicketDetail = async (id: number) => {
     if (selectedItem.value.userId) user.value = await userService.getById(selectedItem.value.userId)
     if (selectedItem.value.vehicleId) vehicle.value = await vehicleService.getById(selectedItem.value.vehicleId)
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load ticket details', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
     closeDialog("view");
   }
 };
@@ -89,7 +89,7 @@ const createTicket = async () => {
     createTicketPayload.value.userId = user.value?.id;
     await ticketService.create(createTicketPayload.value)
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to create ticket', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     closeDialog("create");
     user.value = null;
@@ -107,7 +107,7 @@ const updateTicket = async () => {
       status: selectedItem.value.status,
     })
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update ticket', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isEditing.value = false;
     closeDialog("view");
@@ -130,7 +130,7 @@ const deleteTicket = (id: number | undefined) => {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to delete ticket',
+          detail: error,
           life: 3000,
         });
       } finally {
@@ -147,7 +147,7 @@ const cancelTicketSubscription = async () => {
     await ticketService.unsubscribe(selectedItem.value.id);
 
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to cancel ticket subscription', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: "error", life: 3000, });
   } finally {
     closeDialog("view");
     getAllTickets();
@@ -162,7 +162,7 @@ const registerTicket = async () => {
       slot: registerTicketPayload.value.slot,
     })
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to register ticket', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isEditing.value = false;
     closeDialog("view");

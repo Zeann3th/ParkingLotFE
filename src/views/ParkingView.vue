@@ -40,20 +40,16 @@ const handleCheckIn = async (event: Event) => {
   event.preventDefault();
   if (!validateCheckIn()) return;
   try {
-    const response = await parkingService.checkIn({
+    await parkingService.checkIn({
       sectionId: Number(checkIn.value.sectionId),
       ticketId: Number(checkIn.value.ticketId),
       plate: checkIn.value.plate.toUpperCase(),
       type: checkIn.value.type.toUpperCase()
     });
-    if (!response.message) {
-      toast.add({ severity: 'success', summary: 'Success', detail: 'Check-in successful.', life: 4000 });
-      checkIn.value = { sectionId: '', ticketId: '', plate: '', type: '' };
-    } else {
-      toast.add({ severity: 'error', summary: 'Check-In Failed', detail: response?.message || 'An unknown error occurred.', life: 4000 });
-    }
+    toast.add({ severity: 'success', summary: 'Success', detail: 'Check-in successful.', life: 4000 });
+    checkIn.value = { sectionId: '', ticketId: '', plate: '', type: '' };
   } catch (error: any) {
-    const detail = error?.response?.data?.message || 'Failed to check in due to a server error.';
+    const detail = error || 'Failed to check in due to a server error.';
     toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 4000 });
   }
 };
@@ -67,17 +63,11 @@ const handleCheckOut = async (event: Event) => {
       ticketId: Number(checkOut.value.ticketId),
       plate: checkOut.value.plate.toUpperCase()
     });
-    if (!response.message) {
-      console.log(response.fee);
-      const feeFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(response.fee);
-      toast.add({ severity: 'success', summary: 'Success', detail: `Check-out successful. Fee: ${feeFormatted}`, life: 8000 });
-      checkOut.value = { sectionId: '', ticketId: '', plate: '' };
-    } else {
-      toast.add({ severity: 'error', summary: 'Check-Out Failed', detail: response?.message || 'An unknown error occurred.', life: 4000 });
-    }
+    const feeFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(response.fee);
+    toast.add({ severity: 'success', summary: 'Success', detail: `Check-out successful. Fee: ${feeFormatted}`, life: 8000 });
+    checkOut.value = { sectionId: '', ticketId: '', plate: '' };
   } catch (error: any) {
-    console.error("Check-out Error:", error);
-    const detail = error?.response?.data?.message || 'Failed to check out due to a server error.';
+    const detail = error || 'Failed to check out due to a server error.';
     toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 4000 });
   }
 };

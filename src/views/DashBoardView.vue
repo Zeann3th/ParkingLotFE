@@ -28,7 +28,7 @@ const fetchTicketSummary = async () => {
     ticketState.itemList.value = response.data;
   } catch (error) {
     console.error("Error fetching ticket summary:", error);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load ticket summary', life: 3000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
     ticketState.itemList.value = [];
   } finally {
     ticketState.isLoading.value = false;
@@ -42,7 +42,7 @@ const fetchResidenceSummary = async () => {
     residenceState.itemList.value = response.data;
   } catch (error) {
     console.error("Error fetching residence summary:", error);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load residence summary', life: 3000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
     residenceState.itemList.value = [];
   } finally {
     residenceState.isLoading.value = false;

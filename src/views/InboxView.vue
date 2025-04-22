@@ -36,7 +36,7 @@ const getAllNotifications = async () => {
       maxPage.value = response.count;
     }
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load notifications', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isLoading.value = false;
   }
@@ -59,7 +59,7 @@ const getNotificationDetail = async (id: number) => {
       readNotification(id);
     }
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load notification details', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isDetailLoading.value = false;
   }
@@ -70,7 +70,7 @@ const readNotification = async (id: number) => {
     await notificationService.update(id)
     isMutated.value = true;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to mark notification as read', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   }
 };
 
@@ -89,7 +89,7 @@ const deleteNotification = (id: number) => {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to delete notification',
+          detail: error,
           life: 3000,
         });
       }
@@ -127,7 +127,7 @@ const sendNotification = async () => {
     closeDialog('create');
     isMutated.value = true;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to send notification', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   }
 };
 
