@@ -18,6 +18,61 @@ let featureInterval: number | undefined = undefined;
 
 const features = [
   {
+    title: "Flexible Booking",
+    description: "Book your spot anytime, anywhere.",
+    icon: "📅"
+  },
+  {
+    title: "Easy In-and-Out",
+    description: "Quick entry and exit with no hassle.",
+    icon: "🚪"
+  },
+  {
+    title: "24/7 Access",
+    description: "Access your vehicle whenever you need it.",
+    icon: "⏰"
+  },
+  {
+    title: "Guaranteed Spot",
+    description: "Your space is always reserved for you.",
+    icon: "🔒"
+  },
+  {
+    title: "Unlimited Entries",
+    description: "Come and go as you please.",
+    icon: "♻️"
+  },
+  {
+    title: "Discounts on Services",
+    description: "Enjoy exclusive discounts on additional services.",
+    icon: "💰"
+  },
+  {
+    title: "Dedicated Parking",
+    description: "Your own reserved parking space.",
+    icon: "🅿️"
+  },
+  {
+    title: "Priority Access",
+    description: "Skip the line with priority access.",
+    icon: "🚀"
+  },
+  {
+    title: "Valet Service Available",
+    description: "Let us park your car for you.",
+    icon: "🛎️"
+  },
+  {
+    title: "Smart Parking System",
+    description: "Real-time updates on available spots.",
+    icon: "📡"
+  },
+  {
+    title: "Mobile App Integration",
+    description: "Manage bookings through our mobile app.",
+    icon: "📱"
+  },
+  {
     title: "24/7 Security",
     description: "Round-the-clock surveillance and security personnel.",
     icon: "👮"
