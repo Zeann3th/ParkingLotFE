@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAuth } from '@/composables/auth';
-import { Dialog, Skeleton, Button, InputText, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
+import { Dialog, Skeleton, Button, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Notification } from '@/types';
@@ -12,6 +12,7 @@ import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import { useState } from '@/composables/state';
 import Avatar from '@/components/Avatar.vue';
+import InputText from '@/components/InputText.vue';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Notification>();
 const { role } = useAuth();
@@ -265,8 +266,7 @@ const cancelNewNotification = () => {
               <label class="block text-sm font-medium text-gray-700 mb-2">Recipient User ID
                 (Optional)</label>
               <div class="flex items-center space-x-2">
-                <InputText v-model="newNotification.to" type="number" placeholder="Enter user ID" class="flex-1"
-                  :class="{ 'p-invalid': newNotification.to !== null && newNotification.to.length > 0 && parseInt(newNotification.to) <= 0 }" />
+                <InputText v-model="newNotification.to" inputId="userId" placeholder="Enter user ID" />
               </div>
               <div class="text-xs text-gray-500 mt-2">
                 Leave empty to create a notification for all administrators.
@@ -276,7 +276,7 @@ const cancelNewNotification = () => {
             <!-- Message -->
             <div class="mb-4">
               <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
-              <Textarea id="message" v-model="newNotification.message" rows="5" class="w-full"
+              <Textarea id="message" v-model="newNotification.message" rows="5" class="w-full !bg-white !text-black"
                 placeholder="Type your message here..." />
             </div>
 
