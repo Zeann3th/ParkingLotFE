@@ -3,7 +3,7 @@ import { memoryStorage } from '@/storage';
 import type { CreateResidence, Residence, ResidenceResponse } from '@/types';
 
 export const residenceService = {
-  async getAll(page: number = 1, limit: number = 10, opts?: { cache: boolean; }): Promise<ResidenceResponse> {
+  async getAll(page: number = 1, limit: number = 20, opts?: { cache: boolean; }): Promise<ResidenceResponse> {
     try {
       const response = await axios.get("/residences", {
         headers: {

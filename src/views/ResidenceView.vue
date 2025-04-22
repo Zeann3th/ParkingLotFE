@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Dialog, Button, useToast } from 'primevue';
 import Skeleton from '@/components/Skeleton.vue';
-import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { CreateResidence, Residence } from '@/types';
 import { residenceService } from '@/services/residence.service';
@@ -16,7 +15,7 @@ import InputNumber from '@/components/InputNumber.vue';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Residence>();
 const toast = useToast();
-const route = useRoute();
+const scrollContainer = ref<HTMLElement | null>(null);
 
 const isPrivilleged = computed(() => {
   const { role } = useAuth();
@@ -31,24 +30,16 @@ const createResidencePayload = ref<CreateResidence>({
 const getAllResidences = async () => {
   isLoading.value = true;
   try {
-    const response = await residenceService.getAll(page.value, limit.value, { cache: !isMutated.value && !!route.query.page });
+    const response = await residenceService.getAll(page.value, limit.value, { cache: !isMutated.value });
     itemList.value = response.data;
     maxPage.value = response.count;
     isMutated.value = false;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load residences', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isLoading.value = false;
   }
 };
-
-watch(() => route.query, (newQuery, oldQuery) => {
-  const newPage = parseInt(newQuery.page as string) || 1;
-  if (newPage !== page.value || oldQuery?.page === undefined) {
-    page.value = newPage;
-    getAllResidences();
-  }
-}, { immediate: true });
 
 const getResidenceDetail = async (id: number) => {
   openDialog("view");
@@ -59,7 +50,7 @@ const getResidenceDetail = async (id: number) => {
     const response = await residenceService.getById(id);
     selectedItem.value = response;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load residence details', life: 3000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
     closeDialog("view");
   } finally {
     isDetailLoading.value = false;
@@ -95,11 +86,42 @@ const getVehicleTypeIcon = (type: string) => {
     default: return 'pi pi-question-circle';
   }
 };
+
+const handleScroll = () => {
+  if (!isLoading.value && page.value < maxPage.value) {
+    console.log("Reached bottom, loading more...");
+    page.value += 1;
+    isLoading.value = true;
+
+    residenceService.getAll(page.value, limit.value, { cache: !isMutated.value })
+      .then((response) => {
+        if (response.data && response.data.length > 0) {
+          itemList.value.push(...response.data);
+        }
+        maxPage.value = response.count;
+      })
+      .catch(() => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load more tickets', life: 3000 });
+      })
+      .finally(() => {
+        isLoading.value = false;
+      });
+  }
+};
+
+onMounted(() => {
+  getAllResidences();
+  scrollContainer.value?.addEventListener('scroll', handleScroll);
+});
+
+onBeforeUnmount(() => {
+  scrollContainer.value?.removeEventListener('scroll', handleScroll);
+});
 </script>
 
 <template>
   <MenuLayout>
-    <div
+    <div ref="scrollContainer"
       class="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <div class="max-w-7xl mx-auto">
         <Title name="Residences" @click="refreshData" class="mb-6" />
@@ -171,6 +193,7 @@ const getVehicleTypeIcon = (type: string) => {
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Room</span>
                   <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ selectedItem.room }}</span>
                 </div>
+
                 <div class="pt-2">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-2">Residents</span>
                   <div v-if="selectedItem.residents?.length" class="space-y-2">
@@ -197,6 +220,18 @@ const getVehicleTypeIcon = (type: string) => {
                   <div v-else class="text-sm text-gray-400 dark:text-gray-500 italic">No vehicles registered</div>
                 </div>
 
+                <!-- Detail Row: Created At -->
+                <div class="flex justify-between items-start py-1">
+                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Created At</span>
+                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new
+                    Date(selectedItem.createdAt).toLocaleString() }}</span>
+                </div>
+                <!-- Detail Row: Updated At -->
+                <div class="flex justify-between items-start py-1">
+                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Updated At</span>
+                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new
+                    Date(selectedItem.updatedAt).toLocaleString() }}</span>
+                </div>
               </div>
             </div>
 

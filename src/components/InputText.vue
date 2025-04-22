@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TicketType } from '@/types';
 import { InputText } from 'primevue';
-import { defineProps, defineEmits, computed } from 'vue';
+import { computed } from 'vue';
 
 type AllowedTypes = string | TicketType | null | undefined;
 

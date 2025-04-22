@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { InputNumber } from 'primevue';
-import { defineProps, defineEmits } from 'vue';
 
 defineProps<{
   modelValue: number | null | undefined;

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getInitials, getRandomColor } from '@/utils';
 import Avatar from 'primevue/avatar';
-import { defineProps } from 'vue';
 
 defineProps({
   name: {

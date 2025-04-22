@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { Dialog, Button, useToast } from 'primevue';
+import { computed, onMounted, ref } from 'vue';
+import { Dialog, Button, useToast, useConfirm, ConfirmDialog } from 'primevue';
 import Skeleton from '@/components/Skeleton.vue';
-import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { CreateSection, Section } from '@/types';
 import { sectionService } from '@/services/section.service';
@@ -15,13 +14,21 @@ import InputText from '@/components/InputText.vue';
 import InputNumber from '@/components/InputNumber.vue';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Section>();
-const toast = useToast();
-const route = useRoute();
 
+const toast = useToast();
+const confirm = useConfirm();
+
+const isEditing = ref(false);
 const isPrivileged = computed(() => {
   const { role } = useAuth();
-  return role.value === "ADMIN" || role.value === "MANAGER";
+  return role.value === "ADMIN" || role.value === "SECURITY";
 })
+
+const handleEdit = () => {
+  if (selectedItem.value?.name) createSectionPayload.value.name = selectedItem.value.name;
+  if (selectedItem.value?.capacity) createSectionPayload.value.capacity = selectedItem.value.capacity;
+  isEditing.value = true;
+}
 
 const createSectionPayload = ref<CreateSection>({
   name: '',
@@ -31,25 +38,15 @@ const createSectionPayload = ref<CreateSection>({
 const getAllSections = async () => {
   isLoading.value = true;
   try {
-    const response = await sectionService.getAll(page.value, limit.value, { cache: !isMutated.value && !!route.query.page });
-    itemList.value = response.data;
-    maxPage.value = response.count;
+    itemList.value = await sectionService.getAll(page.value, limit.value, { cache: !isMutated.value });
+    maxPage.value = 1;
     isMutated.value = false;
   } catch (error) {
-    console.error("Failed to load sections:", error);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load sections', life: 3000, });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   } finally {
     isLoading.value = false;
   }
 };
-
-watch(() => route.query, (newQuery, oldQuery) => {
-  const newPage = parseInt(newQuery.page as string) || 1;
-  if (newPage !== page.value || oldQuery?.page === undefined) {
-    page.value = newPage;
-    getAllSections();
-  }
-}, { immediate: true });
 
 const getSectionDetail = async (id: number) => {
   openDialog("view");
@@ -60,45 +57,79 @@ const getSectionDetail = async (id: number) => {
     const response = await sectionService.getById(id);
     selectedItem.value = response;
   } catch (error) {
-    console.error('Error fetching section details:', error);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load section details', life: 3000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
     closeDialog("view");
   } finally {
     isDetailLoading.value = false;
   }
 };
 
-const updateSection = () => {
-  closeDialog('view');
-  toast.add({ severity: 'info', summary: 'Info', detail: 'Edit functionality not yet implemented.', life: 3000 });
+const updateSection = async () => {
+  if (!selectedItem.value?.id) return;
+  try {
+    await sectionService.update(selectedItem.value.id, createSectionPayload.value);
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update section', life: 3000 });
+    return;
+  } finally {
+    closeDialog('view');
+    isEditing.value = false;
+    isMutated.value = true;
+    getAllSections();
+  }
 };
 
-const deleteSection = () => {
-  closeDialog('view');
-  toast.add({ severity: 'info', summary: 'Info', detail: 'Delete functionality not yet implemented.', life: 3000 });
+const deleteSection = (id: number | undefined) => {
+  if (!id) return;
+  confirm.require({
+    message: 'Are you sure you want to delete this ticket?',
+    header: 'Delete Confirmation',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      try {
+        await sectionService.delete(id);
+        isMutated.value = true;
+      } catch (error) {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error,
+          life: 3000,
+        });
+      } finally {
+        closeDialog("view");
+        getAllSections();
+      }
+    }
+  });
 };
 
 const createSection = async () => {
+  if (createSectionPayload.value.name.trim() === '' || createSectionPayload.value.capacity == 0) return;
   try {
-    // Placeholder for actual create operation
-    // await sectionService.create(createSectionPayload.value);
+    await sectionService.create(createSectionPayload.value);
     toast.add({ severity: 'success', summary: 'Success', detail: 'Section created successfully', life: 3000 });
-    isMutated.value = true;
-    getAllSections();
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to create section', life: 3000 });
     return;
   } finally {
     closeDialog('create');
     createSectionPayload.value = { name: '', capacity: 0 };
+    isMutated.value = true;
+    getAllSections();
   }
 };
 
 const refreshData = () => {
   isMutated.value = true;
   getAllSections();
-  toast.add({ severity: 'success', summary: 'Refreshed', detail: 'Section list updated.', life: 1500 });
 }
+
+onMounted(() => {
+  getAllSections();
+  isMutated.value = false;
+});
 </script>
 
 <template>
@@ -125,7 +156,7 @@ const refreshData = () => {
 
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">
               <div class="mt-1">
-                <i class="pi pi-users mr-1"></i>
+                <i class="pi pi-car mr-1"></i>
                 <span>Capacity: {{ section.capacity }}</span>
               </div>
             </div>
@@ -151,7 +182,7 @@ const refreshData = () => {
               <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Section Details</h2>
               <Button icon="pi pi-times"
                 class="p-button-text p-button-rounded !w-8 !h-8 !text-gray-500 dark:!text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-primary-500/50"
-                @click="closeDialog('view')" aria-label="Close dialog" />
+                @click="() => { closeDialog('view'), isEditing = false }" aria-label="Close dialog" />
             </div>
 
             <div v-if="isDetailLoading" class="p-6 text-center text-gray-500 dark:text-gray-400">
@@ -163,42 +194,55 @@ const refreshData = () => {
                 <!-- Detail Row: ID -->
                 <div class="flex justify-between items-start py-1">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">ID</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right break-all">{{ selectedItem.id }}</span>
+                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right break-all">{{ selectedItem.id
+                  }}</span>
                 </div>
                 <!-- Detail Row: Name -->
                 <div class="flex justify-between items-start py-1">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Name</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ selectedItem.name }}</span>
+                  <span v-if="!isEditing" class="text-sm text-gray-800 dark:text-gray-100 text-right">{{
+                    selectedItem.name }}</span>
+                  <InputText v-else v-model="createSectionPayload.name" inputId="updateSectionName" />
                 </div>
                 <!-- Detail Row: Capacity -->
                 <div class="flex justify-between items-start py-1">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Capacity</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ selectedItem.capacity }}</span>
+                  <span v-if="!isEditing" class="text-sm text-gray-800 dark:text-gray-100 text-right">{{
+                    selectedItem.capacity
+                  }}</span>
+                  <InputNumber v-else v-model="createSectionPayload.capacity" inputId="updateSectionCapacity" />
                 </div>
                 <!-- Detail Row: Created At -->
                 <div class="flex justify-between items-start py-1">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Created At</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new Date(selectedItem.createdAt).toLocaleString() }}</span>
+                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new
+                    Date(selectedItem.createdAt).toLocaleString() }}</span>
                 </div>
                 <!-- Detail Row: Updated At -->
                 <div class="flex justify-between items-start py-1">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Updated At</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new Date(selectedItem.updatedAt).toLocaleString() }}</span>
+                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new
+                    Date(selectedItem.updatedAt).toLocaleString() }}</span>
                 </div>
               </div>
             </div>
 
             <div v-if="selectedItem && !isDetailLoading"
               class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+
+              <Button v-if="isPrivileged && !isEditing" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
+                           !border-accent !bg-accent !text-white hover:!bg-accent/80
+                           focus:!ring-2 focus:!ring-accent/50" @click="handleEdit" />
+              <Button v-else-if="isPrivileged && isEditing" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
+                           !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
+                           focus:!ring-2 focus:!ring-accent/50" @click="updateSection" />
               <Button v-if="isPrivileged" label="Delete" icon="pi pi-trash" class="p-button-sm p-button-outlined
                            !border-red-500 !bg-red-500 !text-white hover:!bg-red-700
-                           focus:!ring-2 focus:!ring-red-500/50" @click="deleteSection" />
-              <Button v-if="isPrivileged" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
-                           !border-accent !bg-accent !text-white hover:!bg-accent/80
-                           focus:!ring-2 focus:!ring-accent/50" @click="updateSection" />
+                           focus:!ring-2 focus:!ring-red-500/50" @click="deleteSection(selectedItem.id)" />
               <Button label="Close" class="p-button-sm p-button-text
                            !text-gray-700  hover:!bg-gray-100 
-                           focus:!ring-2 focus:!ring-gray-500/50" @click="closeDialog('view')" />
+                           focus:!ring-2 focus:!ring-gray-500/50"
+                @click="() => { closeDialog('view'); isEditing = false }" />
             </div>
           </div>
         </Dialog>
@@ -214,8 +258,8 @@ const refreshData = () => {
               @click="closeDialog('create')" aria-label="Close dialog" unstyled />
           </div>
           <div class="p-5 md:p-6 space-y-4">
-            <InputText v-model="createSectionPayload.name" inputId="createSectionName"
-              placeholder="Enter section name" label="Section Name" />
+            <InputText v-model="createSectionPayload.name" inputId="createSectionName" placeholder="Enter section name"
+              label="Section Name" />
             <InputNumber v-model="createSectionPayload.capacity" inputId="createSectionCapacity"
               placeholder="Enter capacity" label="Capacity" />
           </div>
@@ -233,5 +277,7 @@ const refreshData = () => {
     </div>
 
     <FloatingButton v-if="isPrivileged" icon="+" @click="openDialog('create')" aria-label="Add new section" />
+    <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
+      rejectClass="!bg-red-500 !hover:bg-red-700 !text-white" />
   </MenuLayout>
 </template>

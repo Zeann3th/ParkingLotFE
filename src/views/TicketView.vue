@@ -447,6 +447,14 @@ const closeCreateDialog = () => {
                 <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ user.name }} ({{ user.username
                 }})</span>
               </template>
+              <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Created At</span>
+              <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ new
+                Date(selectedItem.createdAt).toLocaleString()
+              }}</span>
+              <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Updated At</span>
+              <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ new
+                Date(selectedItem.updatedAt).toLocaleString()
+              }}</span>
             </div>
           </div>
           <div v-else class="p-6 text-center text-gray-500 dark:text-gray-400">
