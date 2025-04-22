@@ -18,11 +18,6 @@ let featureInterval: number | undefined = undefined;
 
 const features = [
   {
-    title: "Smart Parking",
-    description: "AI-powered parking space detection for optimal vehicle placement.",
-    icon: "🤖"
-  },
-  {
     title: "24/7 Security",
     description: "Round-the-clock surveillance and security personnel.",
     icon: "👮"
