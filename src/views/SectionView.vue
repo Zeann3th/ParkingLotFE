@@ -19,10 +19,13 @@ const toast = useToast();
 const confirm = useConfirm();
 
 const isEditing = ref(false);
-const isPrivileged = computed(() => {
+
+const isAdmin = computed(() => {
   const { role } = useAuth();
-  return role.value === "ADMIN" || role.value === "SECURITY";
+  return role.value === "ADMIN";
 })
+
+const users = ref('');
 
 const handleEdit = () => {
   if (selectedItem.value?.name) createSectionPayload.value.name = selectedItem.value.name;
@@ -67,7 +70,16 @@ const getSectionDetail = async (id: number) => {
 const updateSection = async () => {
   if (!selectedItem.value?.id) return;
   try {
-    await sectionService.update(selectedItem.value.id, createSectionPayload.value);
+    const userList = users.value.split(",");
+    if (userList.length === 0) {
+      await sectionService.update(selectedItem.value.id, createSectionPayload.value);
+    } else {
+      const userIds = userList.map(user => {
+        const userId = parseInt(user.trim());
+        return isNaN(userId) ? null : userId;
+      }).filter(userId => userId !== null);
+      await sectionService.update(selectedItem.value.id, createSectionPayload.value, userIds);
+    }
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update section', life: 3000 });
     return;
@@ -212,6 +224,10 @@ onMounted(() => {
                   }}</span>
                   <InputNumber v-else v-model="createSectionPayload.capacity" inputId="updateSectionCapacity" />
                 </div>
+                <div v-if="isEditing" class="flex justify-between items-start py-1">
+                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Assign to user(s)</span>
+                  <InputText v-model="users" inputId="updateSectionUser" />
+                </div>
                 <!-- Detail Row: Created At -->
                 <div class="flex justify-between items-start py-1">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Created At</span>
@@ -230,13 +246,13 @@ onMounted(() => {
             <div v-if="selectedItem && !isDetailLoading"
               class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
 
-              <Button v-if="isPrivileged && !isEditing" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
+              <Button v-if="isAdmin && !isEditing" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
                            !border-accent !bg-accent !text-white hover:!bg-accent/80
                            focus:!ring-2 focus:!ring-accent/50" @click="handleEdit" />
-              <Button v-else-if="isPrivileged && isEditing" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
+              <Button v-else-if="isAdmin && isEditing" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
                            !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
                            focus:!ring-2 focus:!ring-accent/50" @click="updateSection" />
-              <Button v-if="isPrivileged" label="Delete" icon="pi pi-trash" class="p-button-sm p-button-outlined
+              <Button v-if="isAdmin" label="Delete" icon="pi pi-trash" class="p-button-sm p-button-outlined
                            !border-red-500 !bg-red-500 !text-white hover:!bg-red-700
                            focus:!ring-2 focus:!ring-red-500/50" @click="deleteSection(selectedItem.id)" />
               <Button label="Close" class="p-button-sm p-button-text
@@ -265,7 +281,7 @@ onMounted(() => {
           </div>
           <div
             class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button v-if="isPrivileged" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
+            <Button v-if="isAdmin" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
                            !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
                            focus:!ring-2 focus:!ring-accent/50" @click="createSection" />
             <Button label="Close" class="p-button-sm p-button-text
@@ -276,7 +292,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <FloatingButton v-if="isPrivileged" icon="+" @click="openDialog('create')" aria-label="Add new section" />
+    <FloatingButton v-if="isAdmin" icon="+" @click="openDialog('create')" aria-label="Add new section" />
     <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
       rejectClass="!bg-red-500 !hover:bg-red-700 !text-white" />
   </MenuLayout>

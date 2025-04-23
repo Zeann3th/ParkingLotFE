@@ -82,7 +82,7 @@ const refreshData = () => {
 const getVehicleTypeIcon = (type: string) => {
   switch (type?.toUpperCase()) {
     case 'CAR': return 'pi pi-car';
-    case 'MOTORBIKE': return 'pi pi-bolt';
+    case 'MOTORBIKE': return 'pi pi-';
     default: return 'pi pi-question-circle';
   }
 };
@@ -142,8 +142,8 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              <div v-if="residence.residents?.length" class="mt-1 text-xs">
-                {{ residence.residents.length }} Resident(s)
+              <div v-if="residence.users?.length" class="mt-1 text-xs">
+                {{ residence.users.length }} Resident(s)
               </div>
             </div>
 
@@ -196,8 +196,8 @@ onBeforeUnmount(() => {
 
                 <div class="pt-2">
                   <span class="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-2">Residents</span>
-                  <div v-if="selectedItem.residents?.length" class="space-y-2">
-                    <div v-for="resident in selectedItem.residents" :key="resident.id"
+                  <div v-if="selectedItem.users?.length" class="space-y-2">
+                    <div v-for="resident in selectedItem.users" :key="resident.id"
                       class="flex items-center p-2 rounded bg-gray-100 dark:bg-gray-700/50">
                       <i class="pi pi-user mr-2 text-primary dark:text-primary-300"></i>
                       <span class="text-sm text-gray-700 dark:text-gray-200">{{ resident.name }}</span>

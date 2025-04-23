@@ -42,9 +42,12 @@ export const sectionService = {
       throw new Error(error.response?.data?.message ?? 'Failed to create section');
     }
   },
-  async update(id: number, section: Partial<Section>): Promise<Section> {
+  async update(id: number, section: Partial<Section>, privilegedTo?: number[]): Promise<Section> {
     try {
-      const response = await axios.patch(`/sections/${id}`, section, {
+      const response = await axios.patch(`/sections/${id}`, {
+        ...section,
+        ...(privilegedTo ? privilegedTo.length > 0 ? { privilegedTo } : {} : {})
+      }, {
         headers: {
           Authorization: `Bearer ${memoryStorage.getToken()}`,
         },

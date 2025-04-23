@@ -40,7 +40,7 @@ export interface Residence extends BaseModel {
   building: string;
   room: number;
   vehicles?: Vehicle[];
-  residents?: Resident[];
+  users?: Resident[];
 };
 
 export interface CreateResidence extends Omit<Residence, "id" | "createdAt" | "updatedAt"> { };
