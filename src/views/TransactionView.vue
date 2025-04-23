@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import axios from 'axios';
 import Dialog from 'primevue/dialog';
 import Skeleton from '@/components/Skeleton.vue';
@@ -7,15 +7,22 @@ import Title from '@/components/Title.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import Button from 'primevue/button';
 import { memoryStorage } from '@/storage';
-import { useToast } from 'primevue';
+import { useConfirm, useToast, ConfirmDialog } from 'primevue';
 import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Transaction, TransactionResponse } from '@/types';
 import { useState } from '@/composables/state';
+import { useAuth } from '@/composables/auth';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, isDetailLoading, closeDialog, selectedItem, itemList } = useState<Transaction>();
 const toast = useToast();
 const route = useRoute();
+const confirm = useConfirm();
+
+const isAdmin = computed(() => {
+  const { role } = useAuth();
+  return role.value === 'ADMIN';
+})
 
 const getAllTransactions = async () => {
   isLoading.value = true;
@@ -57,13 +64,41 @@ const getTransactionDetails = async (id: number) => {
     });
     selectedItem.value = response.data;
   } catch (error: any) {
-    console.error("Failed to load transaction details:", error);
     const detail = error?.response?.data?.message || 'Failed to load transaction details';
     toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
     closeDialog("view");
   } finally {
     isDetailLoading.value = false;
   }
+};
+
+const deleteTransaction = (id: number | undefined) => {
+  if (!id) return;
+  confirm.require({
+    message: 'Are you sure you want to delete this section?',
+    header: 'Delete Confirmation',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      try {
+        await axios.delete(`/transactions/${id}`, {
+          headers: {
+            Authorization: `Bearer ${memoryStorage.getToken()}`,
+          },
+        });
+        refreshData();
+      } catch (error) {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error,
+          life: 3000,
+        });
+      } finally {
+        closeDialog("view");
+      }
+    }
+  });
 };
 
 const checkout = async (transactionId: number, event?: Event) => {
@@ -84,8 +119,7 @@ const checkout = async (transactionId: number, event?: Event) => {
     }
     else {
       toast.add({ severity: 'warn', summary: 'Info', detail: 'Checkout processed, no redirect needed.', life: 3000 });
-      isMutated.value = true;
-      getAllTransactions();
+      refreshData();
       closeDialog("view");
     }
   } catch (error: any) {
@@ -132,6 +166,7 @@ const getStatusIcon = (status: string): string => {
 };
 
 const refreshData = () => {
+  isMutated.value = true;
   getAllTransactions();
 }
 
@@ -251,8 +286,11 @@ const refreshData = () => {
             <!-- Dialog Footer/Actions -->
             <div v-if="selectedItem && !isDetailLoading"
               class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
+              <Button v-if="isAdmin" label="Delete" icon="pi pi-times"
+                class="p-button-sm !bg-red-500 hover:!bg-red-700 !border-red-500 !text-white"
+                @click="deleteTransaction(selectedItem.id)" />
               <Button v-if="selectedItem.status === 'PENDING'" label="Proceed to Payment" icon="pi pi-credit-card"
-                class="p-button-sm !bg-primary-600 hover:!bg-primary-700 !border-primary-600 !text-white"
+                class="p-button-sm !bg-primary hover:!bg-primary/80 !border-primary !text-white"
                 @click="checkout(selectedItem.id)" />
               <Button label="Close" class="p-button-sm p-button-text
                            !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
@@ -263,5 +301,7 @@ const refreshData = () => {
 
       </div>
     </div>
+    <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
+      rejectClass="!bg-red-500 !hover:bg-red-700 !text-white" />
   </MenuLayout>
 </template>

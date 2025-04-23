@@ -80,28 +80,27 @@ const updateSection = async () => {
       }).filter(userId => userId !== null);
       await sectionService.update(selectedItem.value.id, createSectionPayload.value, userIds);
     }
+    refreshData();
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update section', life: 3000 });
     return;
   } finally {
     closeDialog('view');
     isEditing.value = false;
-    isMutated.value = true;
-    getAllSections();
   }
 };
 
 const deleteSection = (id: number | undefined) => {
   if (!id) return;
   confirm.require({
-    message: 'Are you sure you want to delete this ticket?',
+    message: 'Are you sure you want to delete this section?',
     header: 'Delete Confirmation',
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     accept: async () => {
       try {
         await sectionService.delete(id);
-        isMutated.value = true;
+        refreshData();
       } catch (error) {
         toast.add({
           severity: 'error',
@@ -111,7 +110,6 @@ const deleteSection = (id: number | undefined) => {
         });
       } finally {
         closeDialog("view");
-        getAllSections();
       }
     }
   });
@@ -121,15 +119,13 @@ const createSection = async () => {
   if (createSectionPayload.value.name.trim() === '' || createSectionPayload.value.capacity == 0) return;
   try {
     await sectionService.create(createSectionPayload.value);
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Section created successfully', life: 3000 });
+    refreshData();
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to create section', life: 3000 });
     return;
   } finally {
     closeDialog('create');
     createSectionPayload.value = { name: '', capacity: 0 };
-    isMutated.value = true;
-    getAllSections();
   }
 };
 

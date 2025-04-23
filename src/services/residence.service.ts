@@ -40,5 +40,16 @@ export const residenceService = {
     } catch (error: any) {
       throw new Error(error.response.data.message ?? "Failed to create residence");
     }
+  },
+  async delete(id: number): Promise<void> {
+    try {
+      await axios.delete(`/residences/${id}`, {
+        headers: {
+          Authorization: `Bearer ${memoryStorage.getToken()}`,
+        }
+      });
+    } catch (error: any) {
+      throw new Error(error.response.data.message ?? "Failed to delete residence");
+    }
   }
 };

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Dialog, Skeleton, Button, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
-import { useRoute } from 'vue-router';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { Notification } from '@/types';
 import { notificationService } from '@/services/notification.service';
@@ -17,7 +16,6 @@ import InputText from '@/components/InputText.vue';
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Notification>();
 const { role } = useAuth();
 const toast = useToast();
-const route = useRoute();
 const confirm = useConfirm();
 
 const newNotification = ref({
@@ -28,7 +26,7 @@ const newNotification = ref({
 const getAllNotifications = async () => {
   isLoading.value = true;
   try {
-    const response = await notificationService.getAll(page.value, limit.value, { cache: isMutated.value });
+    const response = await notificationService.getAll(page.value, limit.value, { cache: !isMutated.value });
     if (response.message) {
       toast.add({ severity: 'error', summary: 'Error', detail: response.message, life: 3000, });
     } else {
@@ -41,11 +39,6 @@ const getAllNotifications = async () => {
     isLoading.value = false;
   }
 };
-
-watch(() => route.query, (newQuery) => {
-  page.value = parseInt(newQuery.page as string) || 1;
-  getAllNotifications();
-}, { immediate: true });
 
 const getNotificationDetail = async (id: number) => {
   isDetailLoading.value = true;
@@ -68,7 +61,7 @@ const getNotificationDetail = async (id: number) => {
 const readNotification = async (id: number) => {
   try {
     await notificationService.update(id)
-    isMutated.value = true;
+    refreshData();
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   }
@@ -83,7 +76,7 @@ const deleteNotification = (id: number) => {
     accept: async () => {
       try {
         await notificationService.delete(id);
-        isMutated.value = true;
+        refreshData();
       } catch (error) {
         console.error('Error deleting notification:', error);
         toast.add({
@@ -125,7 +118,7 @@ const sendNotification = async () => {
     await notificationService.create(payload.message, payload.to);
     newNotification.value = { to: '', message: '' };
     closeDialog('create');
-    isMutated.value = true;
+    refreshData();
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
   }
@@ -133,6 +126,11 @@ const sendNotification = async () => {
 
 const isAdmin = computed(() => role.value === 'ADMIN');
 const isPrivilleged = computed(() => role.value === 'ADMIN' || role.value === 'SECURITY');
+
+const refreshData = () => {
+  isMutated.value = true;
+  getAllNotifications();
+}
 
 const cancelNewNotification = () => {
   newNotification.value = { to: '', message: '' };

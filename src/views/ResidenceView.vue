@@ -17,9 +17,9 @@ const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, op
 const toast = useToast();
 const scrollContainer = ref<HTMLElement | null>(null);
 
-const isPrivilleged = computed(() => {
+const isAdmin = computed(() => {
   const { role } = useAuth();
-  return role.value === "ADMIN" || role.value === "SECURITY";
+  return role.value === "ADMIN";
 })
 
 const createResidencePayload = ref<CreateResidence>({
@@ -65,6 +65,7 @@ const updateResidence = () => {
 const createResidence = async () => {
   try {
     await residenceService.create(createResidencePayload.value);
+    refreshData();
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
     return;
@@ -73,6 +74,17 @@ const createResidence = async () => {
     createResidencePayload.value = { building: '', room: 0 };
   }
 };
+
+const deleteResidence = async () => {
+  if (!selectedItem.value) return;
+  try {
+    await residenceService.delete(selectedItem.value.id);
+    closeDialog('view');
+    refreshData();
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
+  }
+}
 
 const refreshData = () => {
   isMutated.value = true;
@@ -237,9 +249,12 @@ onBeforeUnmount(() => {
 
             <div v-if="selectedItem && !isDetailLoading"
               class="flex justify-end gap-3 p-4 border-t border-gray-200  bg-gray-50 rounded-b-lg">
-              <Button v-if="isPrivilleged" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
+              <Button v-if="isAdmin" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
                            !border-accent !bg-accent !text-white hover:!bg-accent/80
                            focus:!ring-2 focus:!ring-accent/50" @click="updateResidence" />
+              <Button v-if="isAdmin" label="Delete" icon="pi pi-times" class="p-button-sm p-button-outlined
+                           !border-red-500 !bg-red-500 !text-white hover:!bg-red-700
+                           focus:!ring-2 focus:!ring-red-500" @click="deleteResidence" />
               <Button label="Close" class="p-button-sm p-button-text
                            !text-gray-700  hover:!bg-gray-100 
                            focus:!ring-2 focus:!ring-gray-500/50" @click="closeDialog('view')" />
@@ -265,7 +280,7 @@ onBeforeUnmount(() => {
           </div>
           <div
             class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button v-if="isPrivilleged" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
+            <Button v-if="isAdmin" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
                            !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
                            focus:!ring-2 focus:!ring-accent/50" @click="createResidence" />
             <Button label="Close" class="p-button-sm p-button-text
@@ -276,6 +291,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <FloatingButton v-if="isPrivilleged" icon="+" @click="openDialog('create')" aria-label="Add new residence" />
+    <FloatingButton v-if="isAdmin" icon="+" @click="openDialog('create')" aria-label="Add new residence" />
   </MenuLayout>
 </template>
