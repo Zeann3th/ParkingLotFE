@@ -40,7 +40,7 @@ export interface Residence extends BaseModel {
   building: string;
   room: number;
   vehicles?: Vehicle[];
-  users?: Resident[];
+  residents?: Resident[];
 };
 
 export interface CreateResidence extends Omit<Residence, "id" | "createdAt" | "updatedAt"> { };
@@ -107,7 +107,7 @@ export interface CheckIn extends BaseParking {
 export interface CheckOut extends BaseParking { }
 
 export interface Response<T> {
-  count: number;
+  maxPage: number;
   data: T[];
   message?: string;
 }

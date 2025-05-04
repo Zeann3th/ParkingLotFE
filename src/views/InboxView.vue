@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuth } from '@/composables/auth';
 import { Dialog, Skeleton, Button, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
 import MenuLayout from '@/components/MenuLayout.vue';
@@ -31,7 +31,7 @@ const getAllNotifications = async () => {
       toast.add({ severity: 'error', summary: 'Error', detail: response.message, life: 3000, });
     } else {
       itemList.value = response.data;
-      maxPage.value = response.count;
+      maxPage.value = response.maxPage;
     }
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
@@ -136,6 +136,10 @@ const cancelNewNotification = () => {
   newNotification.value = { to: '', message: '' };
   closeDialog('create');
 };
+
+onMounted(() => {
+  getAllNotifications();
+});
 </script>
 
 <template>

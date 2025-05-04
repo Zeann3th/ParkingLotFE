@@ -43,9 +43,10 @@ const router = createRouter({
       meta: { title: "Dashboard", requiresAuth: true, allows: ["ADMIN", "SECURITY", "USER"] }
     },
     {
-      path: "/parking",
+      path: "/sections/:sectionId",
       component: ParkingView,
       name: "parking",
+      props: true,
       meta: { title: "Parking", requiresAuth: true, allows: ["ADMIN", "SECURITY"] }
     },
     {

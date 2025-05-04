@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { Dialog, Button, useToast, useConfirm, ConfirmDialog } from 'primevue';
+import { useRouter } from 'vue-router';
 import Skeleton from '@/components/Skeleton.vue';
 import MenuLayout from '@/components/MenuLayout.vue';
 import type { CreateSection, Section } from '@/types';
@@ -17,12 +18,18 @@ const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, op
 
 const toast = useToast();
 const confirm = useConfirm();
+const router = useRouter();
 
 const isEditing = ref(false);
 
 const isAdmin = computed(() => {
   const { role } = useAuth();
   return role.value === "ADMIN";
+})
+
+const isPrivilleged = computed(() => {
+  const { role } = useAuth();
+  return role.value === "ADMIN" || role.value === "SECURITY";
 })
 
 const users = ref('');
@@ -129,6 +136,11 @@ const createSection = async () => {
   }
 };
 
+const startParkingSession = () => {
+  if (!selectedItem.value?.id) return;
+  router.push({ name: 'parking', params: { sectionId: selectedItem.value.id } });
+}
+
 const refreshData = () => {
   isMutated.value = true;
   getAllSections();
@@ -138,6 +150,7 @@ onMounted(() => {
   getAllSections();
   isMutated.value = false;
 });
+
 </script>
 
 <template>
@@ -241,13 +254,15 @@ onMounted(() => {
 
             <div v-if="selectedItem && !isDetailLoading"
               class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-
+              <Button v-if="isPrivilleged" label="Start Session" icon="pi pi-play" class="p-button-sm p-button-outlined
+                           !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
+                           focus:!ring-2 focus:!ring-green-500/50" @click="startParkingSession" />
               <Button v-if="isAdmin && !isEditing" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
                            !border-accent !bg-accent !text-white hover:!bg-accent/80
                            focus:!ring-2 focus:!ring-accent/50" @click="handleEdit" />
               <Button v-else-if="isAdmin && isEditing" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
                            !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
-                           focus:!ring-2 focus:!ring-accent/50" @click="updateSection" />
+                           focus:!ring-2 focus:!ring-green-500/50" @click="updateSection" />
               <Button v-if="isAdmin" label="Delete" icon="pi pi-trash" class="p-button-sm p-button-outlined
                            !border-red-500 !bg-red-500 !text-white hover:!bg-red-700
                            focus:!ring-2 focus:!ring-red-500/50" @click="deleteSection(selectedItem.id)" />

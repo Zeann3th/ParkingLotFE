@@ -51,5 +51,49 @@ export const residenceService = {
     } catch (error: any) {
       throw new Error(error.response.data.message ?? "Failed to delete residence");
     }
-  }
+  },
+  async addResident(id: number, userId: number): Promise<void> {
+    try {
+      await axios.post(`/residences/${id}/residents/${userId}`, {}, {
+        headers: {
+          Authorization: `Bearer ${memoryStorage.getToken()}`,
+        }
+      });
+    } catch (error: any) {
+      throw new Error(error.response.data.message ?? "Failed to add resident to residence");
+    }
+  },
+  async removeResident(id: number, userId: number): Promise<void> {
+    try {
+      await axios.delete(`/residences/${id}/residents/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${memoryStorage.getToken()}`,
+        }
+      });
+    } catch (error: any) {
+      throw new Error(error.response.data.message ?? "Failed to remove resident from residence");
+    }
+  },
+  async addVehicle(id: number, vehicleId: number): Promise<void> {
+    try {
+      await axios.post(`/residences/${id}/vehicles/${vehicleId}`, {}, {
+        headers: {
+          Authorization: `Bearer ${memoryStorage.getToken()}`,
+        }
+      });
+    } catch (error: any) {
+      throw new Error(error.response.data.message ?? "Failed to add vehicle to residence");
+    }
+  },
+  async removeVehicle(id: number, vehicleId: number): Promise<void> {
+    try {
+      await axios.delete(`/residences/${id}/vehicles/${vehicleId}`, {
+        headers: {
+          Authorization: `Bearer ${memoryStorage.getToken()}`,
+        }
+      });
+    } catch (error: any) {
+      throw new Error(error.response.data.message ?? "Failed to remove vehicle from residence");
+    }
+  },
 };

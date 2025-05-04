@@ -37,7 +37,7 @@ const getAllTransactions = async () => {
       }
     });
     itemList.value = response.data.data;
-    maxPage.value = response.data.count;
+    maxPage.value = response.data.maxPage;
   } catch (error: any) {
     const detail = error?.response?.data?.message || 'Failed to load transactions';
     toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });

@@ -20,8 +20,7 @@ if (role.value === "ADMIN" || role.value === "SECURITY") {
   items.value.push(
     { label: "Tickets", icon: "pi pi-fw pi-ticket", url: "/tickets" },
     { label: "Residences", icon: "pi pi-fw pi-home", url: "/residences" },
-    { label: "Sections", icon: "pi pi-fw pi-warehouse", url: "/sections" },
-    { label: "Parking", icon: "pi pi-fw pi-stopwatch", url: "/parking" }
+    { label: "Sections", icon: "pi pi-fw pi-warehouse", url: "/sections" }
   );
 }
 

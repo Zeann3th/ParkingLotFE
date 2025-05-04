@@ -62,7 +62,7 @@ const getAllTickets = async () => {
   try {
     const response = await ticketService.getAll(page.value, limit.value, { cache: !isMutated.value });
     itemList.value = response.data;
-    maxPage.value = response.count;
+    maxPage.value = response.maxPage;
     isMutated.value = false;
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
@@ -209,7 +209,7 @@ const handleScroll = () => {
         if (response.data && response.data.length > 0) {
           itemList.value.push(...response.data);
         }
-        maxPage.value = response.count;
+        maxPage.value = response.maxPage;
       })
       .catch(() => {
         toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load more tickets', life: 3000 });
@@ -472,7 +472,7 @@ const closeCreateDialog = () => {
               class="p-button-sm p-button-outlined !border-accent !bg-accent !text-white hover:!bg-accent/80 focus:!ring-2 focus:!ring-accent"
               @click="isRegistering = true" />
             <Button v-if="isPrivilledged && !isEditing" label="Edit" icon="pi pi-pencil"
-              class="p-button-sm p-button-outlined !border-yellow-500 !bg-yellow-500 !text-white hover:!bg-yellow-700 focus:!ring-2 focus:!ring-yellow-500"
+              class="p-button-sm p-button-outlined !border-accent !bg-accent !text-white hover:!bg-aceent/80 focus:!ring-2 focus:!ring-aceent"
               @click="isEditing = true" />
             <Button v-else-if="isPrivilledged && isEditing" label="Save" icon="pi pi-save"
               class="p-button-sm p-button-outlined !border-green-500 !bg-green-500 !text-white hover:!bg-green-700 focus:!ring-2 focus:!ring-green-500"

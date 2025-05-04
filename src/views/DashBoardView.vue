@@ -167,7 +167,7 @@ const refreshAll = () => {
               </div>
               <div class="text-right">
                 <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
-                  {{ residence.users?.length ?? 0 }} Resident(s)
+                  {{ residence.residents?.length ?? 0 }} Resident(s)
                 </span>
               </div>
             </div>
