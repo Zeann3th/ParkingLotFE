@@ -165,11 +165,6 @@ const refreshAll = () => {
                   ID: {{ residence.id }}
                 </p>
               </div>
-              <div class="text-right">
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
-                  {{ residence.residents?.length ?? 0 }} Resident(s)
-                </span>
-              </div>
             </div>
           </div>
 
