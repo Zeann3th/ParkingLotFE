@@ -50,7 +50,7 @@ const isAdmin = computed(() => {
 });
 
 const createTicketPayload = ref<CreateTicket>({
-  type: null,
+  type: 'DAILY',
   userId: undefined,
   vehicleId: undefined,
   sectionId: undefined,
@@ -404,7 +404,7 @@ const closeCreateDialog = () => {
             <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Ticket Details</h2>
             <Button icon="pi pi-times"
               class="w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:ring-2 focus:!ring-primary-500/50"
-              @click="closeDialog('view')" aria-label="Close dialog" unstyled />
+              @click="() => { closeDialog('view'); vehicle = null; user = null }" aria-label="Close dialog" unstyled />
           </div>
           <!-- Content Area -->
           <div v-if="selectedItem" class="p-5 md:p-6">
@@ -482,7 +482,7 @@ const closeCreateDialog = () => {
               @click="deleteTicket(selectedItem?.id)" />
             <Button label="Close"
               class="p-button-sm p-button-text !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-gray-500/50"
-              @click="() => { closeDialog('view'); isEditing = false }" />
+              @click="() => { closeDialog('view'); isEditing = false; vehicle = null; user = null }" />
           </div>
         </Dialog>
 
@@ -541,9 +541,9 @@ const closeCreateDialog = () => {
             </div>
 
             <!-- User with Dropdown -->
-            <div class="relative">
+            <div v-if="createTicketPayload.type !== 'DAILY'" class="relative">
               <label for="user-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
-                User (Optional)
+                User
               </label>
               <div class="relative">
                 <InputText v-model="userInput" inputId="user-input" placeholder="Enter User name or Email"
@@ -582,9 +582,9 @@ const closeCreateDialog = () => {
             </div>
 
             <!-- Vehicle with Dropdown -->
-            <div class="relative">
+            <div v-if="createTicketPayload.type !== 'DAILY'" class="relative">
               <label for="vehicle-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
-                Vehicle (Optional)
+                Vehicle
               </label>
               <div class="relative">
                 <InputText v-model="vehicleInput" inputId="vehicle-input" placeholder="Enter Vehicle plate"
@@ -623,16 +623,15 @@ const closeCreateDialog = () => {
             </div>
 
             <!-- Section Id -->
-            <div>
-              <label for="sectionId" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Section
-                (Optional)</label>
+            <div v-if="createTicketPayload.type === 'RESERVED'">
+              <label for="sectionId"
+                class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Section</label>
               <InputNumber v-model="createTicketPayload.sectionId" inputId="sectionId" placeholder="Enter Section ID" />
             </div>
 
             <!-- Slot -->
-            <div>
-              <label for="slot" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Slot
-                (Optional)</label>
+            <div v-if="createTicketPayload.type === 'RESERVED'">
+              <label for="slot" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Slot</label>
               <InputNumber v-model="createTicketPayload.slot" inputId="slot" placeholder="Enter Slot Number" />
             </div>
 
