@@ -14,6 +14,7 @@ import TransactionView from "@/views/TransactionView.vue";
 import SettingView from "@/views/SettingView.vue";
 import ResidenceView from "@/views/ResidenceView.vue";
 import SectionView from "@/views/SectionView.vue";
+import VehicleView from "@/views/VehicleView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -72,6 +73,12 @@ const router = createRouter({
       component: SectionView,
       name: "sections",
       meta: { title: "Sections", requiresAuth: true, allows: ["ADMIN", "SECURITY"] }
+    },
+    {
+      path: "/vehicles",
+      component: VehicleView,
+      name: "vehicles",
+      meta: { title: "Vehicles", requiresAuth: true, allows: ["ADMIN", "SECURITY"] }
     },
     {
       path: "/transactions",
