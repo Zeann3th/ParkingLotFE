@@ -50,6 +50,8 @@ export interface Vehicle extends BaseModel {
   type: string;
 };
 
+export type CreateVehicle = Omit<Vehicle, "id" | "createdAt" | "updatedAt">
+
 export type Resident = {
   id: number;
   name: string;
@@ -116,6 +118,7 @@ export interface NotificationResponse extends Response<Notification> { }
 export interface TransactionResponse extends Response<Transaction> { }
 export interface TicketResponse extends Response<Ticket> { }
 export interface ResidenceResponse extends Response<Residence> { }
+export interface VehicleResponse extends Response<Vehicle> { }
 
 
 
