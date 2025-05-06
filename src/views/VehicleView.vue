@@ -256,7 +256,7 @@ const closeViewDialog = () => {
                         <div class="grid grid-cols-3 gap-x-4 items-center">
                             <label class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">ID</label>
                             <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ selectedItem.id
-                                }}</span>
+                            }}</span>
                         </div>
                         <!-- Plate -->
                         <div class="grid grid-cols-3 gap-x-4 items-center">
@@ -349,10 +349,10 @@ const closeViewDialog = () => {
 
                     <!-- Footer/Actions -->
                     <div
-                        class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-                        <Button label="Save Vehicle" icon="pi pi-check"
-                            class="p-button-sm !border-primary-500 !bg-primary-500 !text-white hover:!bg-primary-700 focus:!ring-2 focus:!ring-primary-500/50"
-                            @click="createVehicle" />
+                        class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
+                        <Button v-if="isAdmin" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
+                           !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
+                           focus:!ring-2 focus:!ring-accent/50" @click="createVehicle" />
                         <Button label="Cancel"
                             class="p-button-sm p-button-text !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-gray-500/50"
                             @click="closeDialogAndResetCreateForm" />
