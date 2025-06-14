@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Dialog, Button, useToast } from 'primevue';
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
+import {Button, Dialog, useToast} from 'primevue';
 import Skeleton from '@/components/Skeleton.vue';
 import MenuLayout from '@/components/MenuLayout.vue';
-import type { CreateResidence, Residence, Vehicle, User } from '@/types';
-import { residenceService } from '@/services/residence.service';
+import type {CreateResidence, Residence, User, Vehicle} from '@/types';
+import {residenceService} from '@/services/residence.service';
 import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import Title from '@/components/Title.vue';
-import { useState } from '@/composables/state';
-import { useAuth } from '@/composables/auth';
+import {useState} from '@/composables/state';
+import {useAuth} from '@/composables/auth';
 import InputText from '@/components/InputText.vue';
 import InputNumber from '@/components/InputNumber.vue';
 import debounce from 'lodash.debounce';
-import { userService } from '@/services/user.service';
-import { vehicleService } from '@/services/vehicle.service';
+import {userService} from '@/services/user.service';
+import {vehicleService} from '@/services/vehicle.service';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Residence>({ limit: 20 });
 const toast = useToast();
@@ -63,8 +63,7 @@ const getResidenceDetail = async (id: number) => {
   resetAddFields();
 
   try {
-    const response = await residenceService.getById(id);
-    selectedItem.value = response;
+    selectedItem.value = await residenceService.getById(id);
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
     closeDialogAndReset("view");
@@ -239,7 +238,7 @@ const debouncedVehicleSearch = debounce(async (value: string) => {
   if (value) {
     try {
       const currentVehicleIds = selectedItem.value?.vehicles?.map(v => v.id) || [];
-      const res = await vehicleService.search({ plate: value });
+      const res = await vehicleService.search(value);
       searchedVehicles.value = res.filter(vehicle => !currentVehicleIds.includes(vehicle.id));
       isVehicleSearchDropdownVisible.value = searchedVehicles.value.length > 0;
     } catch (error) {
@@ -648,12 +647,4 @@ watch(vehicleInput, (newVal) => {
 </template>
 
 <style scoped>
-.p-inputtext.p-component {
-  width: 100%;
-}
-
-.dark #add-resident-dropdown,
-.dark #add-vehicle-dropdown {
-  border: 1px solid var(--p-content-border-color);
-}
 </style>

@@ -49,7 +49,7 @@ const getNotificationDetail = async (id: number) => {
     selectedItem.value = response;
 
     if (response.status === 'PENDING') {
-      readNotification(id);
+      await readNotification(id);
     }
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });

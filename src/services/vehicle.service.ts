@@ -65,13 +65,15 @@ export const vehicleService = {
       throw new Error(error.response.data.message ?? "Failed to delete vehicle");
     }
   },
-  async search(opts: { plate?: string; }): Promise<Vehicle[]> {
+  async search(plate: string): Promise<Vehicle[]> {
     try {
       const response = await axios.get<{ count: number, data: Vehicle[]; }>("/vehicles/search", {
         headers: {
           Authorization: `Bearer ${memoryStorage.getToken()}`,
         },
-        params: opts,
+        params: {
+          plate
+        },
       });
       return response.data.data as Vehicle[];
     } catch (error: any) {

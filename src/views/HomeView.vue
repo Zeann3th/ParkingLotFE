@@ -80,19 +80,19 @@ const sortedPricing = computed<Pricing[]>(() => {
 const handleSignIn = async () => {
   const token = memoryStorage.getToken();
   if (token) {
-    router.push('/dashboard');
+    await router.push('/dashboard');
     return;
   }
   try {
-    const response = await axios.get("/auth/refresh");
+    const response = await axios.get("/auth/refresh", { timeout: 10000 });
     if (response.status === 200 && response.data.access_token) {
       memoryStorage.setToken(response.data.access_token);
-      router.push('/dashboard');
+      await router.push('/dashboard');
     } else {
-      router.push('/sign-in');
+      await router.push('/sign-in');
     }
   } catch (error) {
-    router.push('/sign-in');
+    await router.push('/sign-in');
   }
 }
 </script>
