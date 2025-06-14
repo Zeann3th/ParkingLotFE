@@ -649,6 +649,4 @@ const closeCreateDialog = () => {
 
     <FloatingButton v-if="isPrivilledged" icon="+" @click="openDialog('create')" aria-label="Add new ticket" />
   </MenuLayout>
-  <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
-    rejectClass="!bg-red-500 !hover:bg-red-700 !text-white" />
 </template>
