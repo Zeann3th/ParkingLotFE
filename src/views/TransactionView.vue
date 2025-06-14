@@ -1,46 +1,38 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import axios from 'axios';
-import Dialog from 'primevue/dialog';
-import Skeleton from '@/components/Skeleton.vue';
-import Title from '@/components/Title.vue';
-import EmptyMessage from '@/components/EmptyMessage.vue';
-import Button from 'primevue/button';
-import { memoryStorage } from '@/storage';
-import { useConfirm, useToast, ConfirmDialog } from 'primevue';
+import { toast } from 'vue-sonner';
 import { useRoute } from 'vue-router';
-import MenuLayout from '@/components/MenuLayout.vue';
+import MenuLayout from '@/components/Menu/MenuLayout.vue';
 import type { Transaction, TransactionResponse } from '@/types';
 import { useState } from '@/composables/state';
 import { useAuth } from '@/composables/auth';
+import Title from '@/components/Title.vue';
+import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
+import EmptyMessage from '@/components/EmptyMessage.vue';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { X, Trash2 } from 'lucide-vue-next';
+import { memoryStorage } from '@/storage';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, isDetailLoading, closeDialog, selectedItem, itemList } = useState<Transaction>();
-const toast = useToast();
 const route = useRoute();
-const confirm = useConfirm();
 
-const isAdmin = computed(() => {
-  const { role } = useAuth();
-  return role.value === 'ADMIN';
-})
+const { role } = useAuth();
+const isAdmin = computed(() => role.value === 'ADMIN');
 
 const getAllTransactions = async () => {
   isLoading.value = true;
   try {
     const response = await axios.get<TransactionResponse>('/transactions', {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      },
-      params: {
-        page: page.value,
-        limit: limit.value,
-      }
+      headers: { Authorization: `Bearer ${memoryStorage.getToken()}` },
+      params: { page: page.value, limit: limit.value }
     });
     itemList.value = response.data.data;
     maxPage.value = response.data.maxPage;
-  } catch (error: any) {
-    const detail = error?.response?.data?.message || 'Failed to load transactions';
-    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
+  } catch (error) {
+    toast.error('Failed to load transactions');
   } finally {
     isLoading.value = false;
   }
@@ -55,76 +47,45 @@ const getTransactionDetails = async (id: number) => {
   isDetailLoading.value = true;
   selectedItem.value = null;
   openDialog("view");
-
   try {
-    const response = await axios.get<Transaction>(`/transactions/${id}`, {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      },
+    const response = await axios.get(`/transactions/${id}`, {
+      headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
     });
     selectedItem.value = response.data;
-  } catch (error: any) {
-    const detail = error?.response?.data?.message || 'Failed to load transaction details';
-    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
+  } catch (error) {
+    toast.error('Failed to load transaction details');
     closeDialog("view");
   } finally {
     isDetailLoading.value = false;
   }
 };
 
-const deleteTransaction = (id: number | undefined) => {
+const deleteTransaction = async (id: number | undefined) => {
   if (!id) return;
-  confirm.require({
-    message: 'Are you sure you want to delete this section?',
-    header: 'Delete Confirmation',
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
-    accept: async () => {
-      try {
-        await axios.delete(`/transactions/${id}`, {
-          headers: {
-            Authorization: `Bearer ${memoryStorage.getToken()}`,
-          },
-        });
-        refreshData();
-      } catch (error) {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error,
-          life: 3000,
-        });
-      } finally {
-        closeDialog("view");
-      }
-    }
-  });
+  if (!window.confirm('Are you sure you want to delete this transaction?')) return;
+  try {
+    await axios.delete(`/transactions/${id}`, {
+      headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
+    });
+    toast.success('Transaction deleted');
+    closeDialog('view');
+    await getAllTransactions();
+  } catch (error) {
+    toast.error('Failed to delete transaction');
+  }
 };
 
 const checkout = async (transactionId: number, event?: Event) => {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-
+  if (event) event.stopPropagation();
   try {
-    const response = await axios.post(`/transactions/${transactionId}/checkout`, {}, {
-      headers: {
-        Authorization: `Bearer ${memoryStorage.getToken()}`,
-      }
+    await axios.post(`/transactions/${transactionId}/checkout`, {}, {
+      headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
     });
-
-    if (response.data?.order_url) {
-      window.location.href = response.data.order_url;
-    }
-    else {
-      toast.add({ severity: 'warn', summary: 'Info', detail: 'Checkout processed, no redirect needed.', life: 3000 });
-      refreshData();
-      closeDialog("view");
-    }
-  } catch (error: any) {
-    const detail = error?.response?.data?.message || 'Failed to initiate payment';
-    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
+    toast.success('Checkout successful');
+    await getAllTransactions();
+    closeDialog('view');
+  } catch (error) {
+    toast.error('Checkout failed');
   }
 };
 
@@ -136,172 +97,151 @@ const formatDate = (month: number, year: number) => {
 
 const formatAmount = (amount: number | null | undefined) => {
   if (amount === null || amount === undefined) return 'N/A';
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
 };
 
 const getStatusClass = (status: string): string => {
   switch (status?.toUpperCase()) {
-    case 'PAID':
-      return 'text-green-600 dark:text-green-400';
-    case 'PENDING':
-      return 'text-yellow-600 dark:text-yellow-400';
-    case 'FAILED':
-      return 'text-red-600 dark:text-red-400';
-    default:
-      return 'text-gray-500 dark:text-gray-400';
+    case 'PAID': return 'bg-green-50 text-green-700 border-green-200';
+    case 'PENDING': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+    case 'FAILED': return 'bg-red-50 text-red-700 border-red-200';
+    default: return 'bg-gray-50 text-gray-700 border-gray-200';
   }
 };
 
 const getStatusIcon = (status: string): string => {
   switch (status?.toUpperCase()) {
-    case 'PAID':
-      return 'pi pi-check-circle';
-    case 'PENDING':
-      return 'pi pi-clock';
-    case 'FAILED':
-      return 'pi pi-times-circle';
-    default:
-      return 'pi pi-question-circle';
+    case 'PAID': return '✔️';
+    case 'PENDING': return '⏳';
+    case 'FAILED': return '❌';
+    default: return 'ℹ️';
   }
 };
 
 const refreshData = () => {
   isMutated.value = true;
   getAllTransactions();
-}
-
+};
 </script>
 
 <template>
   <MenuLayout>
-    <div
-      class="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <div class="max-w-4xl mx-auto">
+    <div class="min-h-screen bg-white p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+      <div class="max-w-7xl mx-auto">
         <Title name="Transactions" @click="refreshData" class="mb-6" />
-        <Skeleton v-if="isLoading" type="list" :count="limit" />
-        <div v-else-if="itemList.length > 0" class="space-y-3">
-          <div v-for="transaction in itemList" :key="transaction.id"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/30 border border-transparent flex items-start space-x-4"
-            @click="getTransactionDetails(transaction.id)" role="button"
-            :aria-label="`View details for transaction ${transaction.id}`">
 
-            <!-- Content -->
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-center mb-1">
-                <div class="font-medium text-gray-800 dark:text-gray-100 truncate"
-                  :title="`User #${transaction.userId}`">
-                  User #{{ transaction.userId }}
-                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ formatDate(transaction.month,
-                    transaction.year) }}</span>
-                </div>
-                <div class="text-sm font-semibold whitespace-nowrap pl-2" :class="getStatusClass(transaction.status)">
-                  {{ formatAmount(transaction.amount) }}
-                </div>
-              </div>
-              <!-- Status Row -->
-              <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <div class="flex items-center space-x-1.5" :class="getStatusClass(transaction.status)">
-                  <i class="text-xs" :class="getStatusIcon(transaction.status)"></i>
-                  <span class="capitalize text-xs font-medium">{{ transaction.status?.toLowerCase() || 'N/A' }}</span>
-                </div>
-                <Button v-if="transaction.status === 'PENDING'" label="Pay Now" icon="pi pi-credit-card"
-                  class="p-button-sm p-button-raised !bg-primary hover:!bg-primary/80 !border-primary !text-white !py-1 !px-2.5"
-                  :loading="selectedItem?.id === transaction.id" @click.stop="checkout(transaction.id, $event)" />
-              </div>
+        <!-- Loading Skeletons -->
+        <div v-if="isLoading && itemList.length === 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <Skeleton v-for="i in limit" :key="i" class="h-32 w-full rounded-lg" />
+        </div>
+
+        <!-- Transaction List -->
+        <div v-else-if="itemList.length > 0"
+             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div v-for="transaction in itemList" :key="transaction.id"
+               class="bg-white rounded-lg shadow-md p-4 cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 border border-blue-100 flex flex-col"
+               @click="getTransactionDetails(transaction.id)" role="button"
+               :aria-label="`View details for transaction ${transaction.id}`">
+            <div class="flex justify-between items-start mb-3 gap-2">
+              <h2 class="font-semibold text-black line-clamp-1 break-all flex-1">
+                #{{ transaction.id }}
+              </h2>
+              <Badge :class="getStatusClass(transaction.status)">
+                <span class="mr-1">{{ getStatusIcon(transaction.status) }}</span>
+                {{ transaction.status }}
+              </Badge>
             </div>
+            <div class="text-sm text-gray-600 mb-3">
+              {{ formatAmount(transaction.amount) }}
+            </div>
+            <div class="text-xs text-gray-400 mt-auto pt-2 border-t border-gray-100">
+              {{ transaction.createdAt ? new Date(transaction.createdAt).toLocaleString() : 'N/A' }}
+            </div>
+          </div>
+          <div v-if="isLoading && itemList.length > 0" class="col-span-full text-center py-4">
+            <Skeleton class="h-6 w-24 mx-auto" />
+            <span class="text-gray-500 ml-2">Loading more...</span>
           </div>
         </div>
 
         <!-- Empty State -->
-        <EmptyMessage v-else message="No transactions found" icon="pi pi-exclamation-triangle" @click="refreshData" />
+        <EmptyMessage v-else message="No Transactions Found." @refresh="refreshData" />
 
-        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
-          :style="{ width: '90%', maxWidth: '550px' }"
-          class="!bg-secondary !text-black !rounded-xl !shadow-xl !border !border-gray-200" :dismissableMask="true">
-
-          <!-- Dialog Content Wrapper -->
-          <div>
-            <!-- Custom Header -->
-            <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Transaction Details</h2>
-              <Button icon="pi pi-times"
-                class="p-button-text p-button-rounded !w-8 !h-8 !text-gray-500 dark:!text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-primary-500/50"
-                @click="closeDialog('view')" aria-label="Close dialog" />
-            </div>
-
-            <!-- Loading State inside Dialog -->
-            <div v-if="isDetailLoading" class="p-6 text-center text-gray-500 dark:text-gray-400">
-              Loading details...
-              <!-- Optional: Add Skeleton here -->
-              <div class="mt-4 space-y-3">
-                <Skeleton width="60%" height="1.5rem" class="mb-4 bg-gray-200 dark:bg-gray-700 mx-auto" />
-                <Skeleton width="100%" height="1rem" class="mb-2 bg-gray-200 dark:bg-gray-700" />
-                <Skeleton width="80%" height="1rem" class="mb-2 bg-gray-200 dark:bg-gray-700" />
+        <!-- Transaction Detail Dialog -->
+        <Dialog v-model:open="dialogs.view">
+          <DialogContent class="max-w-md w-full p-0">
+            <div>
+              <div class="flex justify-between items-center p-5 border-b border-blue-100">
+                <h2 class="text-xl font-semibold text-gray-800">Transaction Details</h2>
+                <Button variant="ghost" size="icon" @click="closeDialog('view')" aria-label="Close dialog">
+                  <X class="w-5 h-5" />
+                </Button>
               </div>
-            </div>
-
-            <!-- Content Area -->
-            <div v-if="selectedItem && !isDetailLoading" class="p-5 md:p-6">
-              <div class="flex items-center mb-6 space-x-4">
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ formatDate(selectedItem.month, selectedItem.year) }}
-                  </p>
-                </div>
+              <div v-if="isDetailLoading" class="p-6 text-center text-gray-500">
+                <Skeleton class="h-6 w-2/5 mb-4 mx-auto" />
+                <Skeleton class="h-4 w-full mb-2" />
+                <Skeleton class="h-16 w-full mb-4" />
+                <Skeleton class="h-5 w-3/5 mx-auto" />
+                <p>Loading Details...</p>
               </div>
-
-              <div class="space-y-3">
-                <!-- Detail Row: Amount -->
-                <div class="flex justify-between items-center py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Amount</span>
-                  <span class="text-lg font-semibold text-right" :class="getStatusClass(selectedItem.status)">
-                    {{ formatAmount(selectedItem.amount) }}
-                  </span>
-                </div>
-                <!-- Detail Row: Status -->
-                <div class="flex justify-between items-center py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Status</span>
-                  <div class="flex items-center space-x-1.5 text-right" :class="getStatusClass(selectedItem.status)">
-                    <i class="text-sm" :class="getStatusIcon(selectedItem.status)"></i>
-                    <span class="text-sm font-medium capitalize">{{ selectedItem.status?.toLowerCase() || 'N/A'
-                    }}</span>
+              <div v-else-if="selectedItem" class="p-5 md:p-6">
+                <div class="space-y-3">
+                  <div class="flex justify-between items-start py-1">
+                    <span class="font-medium text-gray-700">ID:</span>
+                    <span>#{{ selectedItem.id }}</span>
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="font-medium text-gray-700">Status:</span>
+                    <Badge :class="getStatusClass(selectedItem.status)">
+                      <span class="mr-1">{{ getStatusIcon(selectedItem.status) }}</span>
+                      {{ selectedItem.status }}
+                    </Badge>
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="font-medium text-gray-700">Amount:</span>
+                    <span>{{ formatAmount(selectedItem.amount) }}</span>
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="font-medium text-gray-700">Created:</span>
+                    <span>{{ selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleString() : 'N/A' }}</span>
+                  </div>
+                  <div class="flex justify-between items-start py-1" v-if="selectedItem.month && selectedItem.year">
+                    <span class="font-medium text-gray-700">Period:</span>
+                    <span>{{ formatDate(selectedItem.month, selectedItem.year) }}</span>
                   </div>
                 </div>
-                <!-- Detail Row: Period -->
-                <div class="flex justify-between items-center py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Period</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">
-                    {{ formatDate(selectedItem.month, selectedItem.year) }}
-                  </span>
-                </div>
-                <!-- Detail Row: Transaction ID -->
-                <div class="flex justify-between items-center py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Transaction ID</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right font-mono break-all">{{
-                    selectedItem.id }}</span>
-                </div>
               </div>
+              <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-lg">
+                <template v-if="selectedItem">
+                  <Button v-if="selectedItem.status === 'PENDING'" variant="secondary" @click="checkout(selectedItem.id)">
+                    Checkout
+                  </Button>
+                  <Button v-if="isAdmin" variant="destructive" @click="deleteTransaction(selectedItem.id)">
+                    <Trash2 class="w-4 h-4 mr-1" /> Delete
+                  </Button>
+                  <Button variant="ghost" @click="closeDialog('view')">
+                    Close
+                  </Button>
+                </template>
+              </DialogFooter>
             </div>
-
-            <!-- Dialog Footer/Actions -->
-            <div v-if="selectedItem && !isDetailLoading"
-              class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
-              <Button v-if="isAdmin" label="Delete" icon="pi pi-times"
-                class="p-button-sm !bg-red-500 hover:!bg-red-700 !border-red-500 !text-white"
-                @click="deleteTransaction(selectedItem.id)" />
-              <Button v-if="selectedItem.status === 'PENDING'" label="Proceed to Payment" icon="pi pi-credit-card"
-                class="p-button-sm !bg-primary hover:!bg-primary/80 !border-primary !text-white"
-                @click="checkout(selectedItem.id)" />
-              <Button label="Close" class="p-button-sm p-button-text
-                           !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
-                           focus:!ring-2 focus:!ring-gray-500/50" @click="closeDialog('view')" />
-            </div>
-          </div>
+          </DialogContent>
         </Dialog>
-
       </div>
     </div>
-    <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
-      rejectClass="!bg-red-500 !hover:bg-red-700 !text-white" />
   </MenuLayout>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+* { font-family: 'Inter', sans-serif; }
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>

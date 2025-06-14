@@ -1,23 +1,25 @@
 <script setup lang="ts">
-import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
-import {Button, Dialog, useToast} from 'primevue';
-import Skeleton from '@/components/Skeleton.vue';
-import MenuLayout from '@/components/MenuLayout.vue';
-import type {CreateResidence, Residence, User, Vehicle} from '@/types';
-import {residenceService} from '@/services/residence.service';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
+import MenuLayout from '@/components/Menu/MenuLayout.vue';
+import type { CreateResidence, Residence, User, Vehicle } from '@/types';
+import { RefreshCw, Trash2, Pencil, Save } from "lucide-vue-next";
+import { residenceService } from '@/services/residence.service';
 import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import Title from '@/components/Title.vue';
-import {useState} from '@/composables/state';
-import {useAuth} from '@/composables/auth';
+import { useState } from '@/composables/state';
+import { useAuth } from '@/composables/auth';
 import InputText from '@/components/InputText.vue';
 import InputNumber from '@/components/InputNumber.vue';
 import debounce from 'lodash.debounce';
-import {userService} from '@/services/user.service';
-import {vehicleService} from '@/services/vehicle.service';
+import { userService } from '@/services/user.service';
+import { vehicleService } from '@/services/vehicle.service';
+import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Residence>({ limit: 20 });
-const toast = useToast();
 const scrollContainer = ref<HTMLElement | null>(null);
 const isEditing = ref(false);
 
@@ -31,15 +33,13 @@ const selectedVehicleToAdd = ref<Vehicle | null>(null);
 const searchedVehicles = ref<Vehicle[]>([]);
 const isVehicleSearchDropdownVisible = ref(false);
 
-const isAdmin = computed(() => {
-  const { role } = useAuth();
-  return role.value === "ADMIN";
-})
+const { role } = useAuth();
+const isAdmin = computed(() => role.value === "ADMIN");
 
 const createResidencePayload = ref<CreateResidence>({
   building: '',
   room: 0,
-})
+});
 
 const getAllResidences = async () => {
   isLoading.value = true;
@@ -49,7 +49,7 @@ const getAllResidences = async () => {
     maxPage.value = response.maxPage;
     isMutated.value = false;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
+    toast.error(error?.toString() ?? 'Error loading residences');
   } finally {
     isLoading.value = false;
   }
@@ -65,7 +65,7 @@ const getResidenceDetail = async (id: number) => {
   try {
     selectedItem.value = await residenceService.getById(id);
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error loading residence');
     closeDialogAndReset("view");
   } finally {
     isDetailLoading.value = false;
@@ -74,9 +74,7 @@ const getResidenceDetail = async (id: number) => {
 
 const toggleEditMode = () => {
   isEditing.value = !isEditing.value;
-  if (!isEditing.value) {
-    resetAddFields();
-  }
+  if (!isEditing.value) resetAddFields();
 };
 
 const updateResidence = async () => {
@@ -89,8 +87,9 @@ const createResidence = async () => {
   try {
     await residenceService.create(createResidencePayload.value);
     refreshData();
+    toast.success('Residence created');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error creating residence');
     return;
   } finally {
     closeDialog('create');
@@ -104,14 +103,15 @@ const deleteResidence = async () => {
     await residenceService.delete(selectedItem.value.id);
     closeDialogAndReset('view');
     refreshData();
+    toast.success('Residence deleted');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error deleting residence');
   }
-}
+};
 
 const addResident = async () => {
   if (!selectedItem.value || !selectedResidentToAdd.value) {
-    toast.add({ severity: 'warn', summary: 'Selection Required', detail: 'Please select a resident from the search results first.', life: 3000 });
+    toast.warning('Please select a resident from the search results first.');
     return;
   }
   try {
@@ -120,8 +120,9 @@ const addResident = async () => {
       selectedItem.value.residents = [...(selectedItem.value.residents || []), selectedResidentToAdd.value];
     }
     resetResidentSearch();
+    toast.success('Resident added');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error Adding Resident', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error adding resident');
   }
 };
 
@@ -130,8 +131,9 @@ const removeResident = async (userId: number) => {
   try {
     await residenceService.removeResident(selectedItem.value.id, userId);
     selectedItem.value.residents = selectedItem.value.residents?.filter((user) => user.id !== userId) || [];
+    toast.success('Resident removed');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error Removing Resident', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error removing resident');
   }
 };
 
@@ -140,18 +142,17 @@ const selectResidentToAdd = (selectedUser: User) => {
   residentInput.value = selectedUser.name;
   isUserSearchDropdownVisible.value = false;
   searchedUsers.value = [];
-}
+};
 
 const closeUserSearchDropdown = (event: MouseEvent) => {
   const userDropdown = document.getElementById('add-resident-dropdown');
   const userInput = document.getElementById('add-resident-input');
-
   if (userDropdown &&
-    !userDropdown.contains(event.target as Node) &&
-    !userInput?.contains(event.target as Node)) {
+      !userDropdown.contains(event.target as Node) &&
+      !userInput?.contains(event.target as Node)) {
     isUserSearchDropdownVisible.value = false;
   }
-}
+};
 
 const debouncedUserSearch = debounce(async (value: string | null) => {
   if (selectedResidentToAdd.value && (value !== selectedResidentToAdd.value.name)) {
@@ -162,7 +163,6 @@ const debouncedUserSearch = debounce(async (value: string | null) => {
     isUserSearchDropdownVisible.value = false;
     return;
   }
-
   let params: { email?: string, name?: string } = {};
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
     params.email = value;
@@ -175,7 +175,7 @@ const debouncedUserSearch = debounce(async (value: string | null) => {
     searchedUsers.value = res.filter(user => !currentResidentIds.includes(user.id));
     isUserSearchDropdownVisible.value = searchedUsers.value.length > 0;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'User Search Error', detail: 'Failed to load users', life: 3000, });
+    toast.error('Failed to load users');
     searchedUsers.value = [];
     isUserSearchDropdownVisible.value = false;
   }
@@ -183,7 +183,7 @@ const debouncedUserSearch = debounce(async (value: string | null) => {
 
 const addVehicle = async () => {
   if (!selectedItem.value || !selectedVehicleToAdd.value) {
-    toast.add({ severity: 'warn', summary: 'Selection Required', detail: 'Please select a vehicle from the search results first.', life: 3000 });
+    toast.warning('Please select a vehicle from the search results first.');
     return;
   }
   try {
@@ -192,8 +192,9 @@ const addVehicle = async () => {
       selectedItem.value.vehicles = [...(selectedItem.value.vehicles || []), selectedVehicleToAdd.value];
     }
     resetVehicleSearch();
+    toast.success('Vehicle added');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error Adding Vehicle', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error adding vehicle');
   }
 };
 
@@ -202,8 +203,9 @@ const removeVehicle = async (vehicleId: number) => {
   try {
     await residenceService.removeVehicle(selectedItem.value.id, vehicleId);
     selectedItem.value.vehicles = selectedItem.value.vehicles?.filter((vehicle) => vehicle.id !== vehicleId) || [];
+    toast.success('Vehicle removed');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error Removing Vehicle', detail: error, life: 3000 });
+    toast.error(error?.toString() ?? 'Error removing vehicle');
   }
 };
 
@@ -212,18 +214,17 @@ const selectVehicleToAdd = (selectedVehicle: Vehicle) => {
   vehicleInput.value = selectedVehicle.plate;
   isVehicleSearchDropdownVisible.value = false;
   searchedVehicles.value = [];
-}
+};
 
 const closeVehicleSearchDropdown = (event: MouseEvent) => {
   const vehicleDropdown = document.getElementById('add-vehicle-dropdown');
   const vehicleInputEl = document.getElementById('add-vehicle-input');
-
   if (vehicleDropdown &&
-    !vehicleDropdown.contains(event.target as Node) &&
-    !vehicleInputEl?.contains(event.target as Node)) {
+      !vehicleDropdown.contains(event.target as Node) &&
+      !vehicleInputEl?.contains(event.target as Node)) {
     isVehicleSearchDropdownVisible.value = false;
   }
-}
+};
 
 const debouncedVehicleSearch = debounce(async (value: string) => {
   if (selectedVehicleToAdd.value && (value !== selectedVehicleToAdd.value.plate)) {
@@ -234,7 +235,6 @@ const debouncedVehicleSearch = debounce(async (value: string) => {
     isVehicleSearchDropdownVisible.value = false;
     return;
   }
-
   if (value) {
     try {
       const currentVehicleIds = selectedItem.value?.vehicles?.map(v => v.id) || [];
@@ -242,7 +242,7 @@ const debouncedVehicleSearch = debounce(async (value: string) => {
       searchedVehicles.value = res.filter(vehicle => !currentVehicleIds.includes(vehicle.id));
       isVehicleSearchDropdownVisible.value = searchedVehicles.value.length > 0;
     } catch (error) {
-      toast.add({ severity: 'error', summary: 'Vehicle Search Error', detail: 'Failed to load vehicles', life: 3000 });
+      toast.error('Failed to load vehicles');
       searchedVehicles.value = [];
       isVehicleSearchDropdownVisible.value = false;
     }
@@ -256,39 +256,14 @@ const refreshData = () => {
   isMutated.value = true;
   itemList.value = [];
   getAllResidences();
-}
-
-const getVehicleTypeIcon = (type: string | undefined) => {
-  if (!type) return 'pi pi-question-circle';
-  switch (type.toUpperCase()) {
-    case 'CAR': return 'pi pi-car';
-    case 'MOTORBIKE': return 'pi pi-bolt';
-    default: return 'pi pi-question-circle';
-  }
 };
 
-const handleScroll = () => {
-  const el = scrollContainer.value;
-  if (el && !isLoading.value && page.value < maxPage.value) {
-    // Check if near bottom
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
-      page.value += 1;
-      isLoading.value = true;
-      residenceService.getAll(page.value, limit.value, { cache: !isMutated.value })
-        .then((response) => {
-          if (response.data && response.data.length > 0) {
-            itemList.value.push(...response.data);
-          }
-          maxPage.value = response.maxPage;
-        })
-        .catch(() => {
-          toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load more residences', life: 3000 });
-          page.value -= 1; // Revert page increment on error
-        })
-        .finally(() => {
-          isLoading.value = false;
-        });
-    }
+const getVehicleTypeIcon = (type: string | undefined) => {
+  if (!type) return '❓';
+  switch (type.toUpperCase()) {
+    case 'CAR': return '🚗';
+    case 'MOTORBIKE': return '🏍️';
+    default: return '❓';
   }
 };
 
@@ -297,7 +272,6 @@ const resetAddFields = () => {
   selectedResidentToAdd.value = null;
   searchedUsers.value = [];
   isUserSearchDropdownVisible.value = false;
-
   vehicleInput.value = '';
   selectedVehicleToAdd.value = null;
   searchedVehicles.value = [];
@@ -309,20 +283,19 @@ const resetResidentSearch = () => {
   selectedResidentToAdd.value = null;
   searchedUsers.value = [];
   isUserSearchDropdownVisible.value = false;
-}
+};
 const resetVehicleSearch = () => {
   vehicleInput.value = '';
   selectedVehicleToAdd.value = null;
   searchedVehicles.value = [];
   isVehicleSearchDropdownVisible.value = false;
-}
+};
 
 const closeDialogAndReset = (dialogKey: keyof typeof dialogs.value) => {
   closeDialog(dialogKey);
   resetAddFields();
   isEditing.value = false;
-}
-
+};
 
 onMounted(() => {
   getAllResidences();
@@ -355,296 +328,266 @@ watch(vehicleInput, (newVal) => {
   }
 });
 
+const handleScroll = () => {
+  const el = scrollContainer.value;
+  if (el && !isLoading.value && page.value < maxPage.value) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+      page.value += 1;
+      isLoading.value = true;
+      residenceService.getAll(page.value, limit.value, { cache: !isMutated.value })
+          .then((response) => {
+            if (response.data && response.data.length > 0) {
+              itemList.value.push(...response.data);
+            }
+            maxPage.value = response.maxPage;
+          })
+          .catch(() => {
+            toast.error('Failed to load more residences');
+            page.value -= 1;
+          })
+          .finally(() => {
+            isLoading.value = false;
+          });
+    }
+  }
+};
 </script>
 
 <template>
   <MenuLayout>
     <div ref="scrollContainer"
-      class="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-y-auto">
+         class="min-h-screen p-4 md:p-6 bg-white text-gray-900 transition-colors duration-300 overflow-y-auto">
       <div class="max-w-7xl mx-auto">
         <Title name="Residences" @click="refreshData" class="mb-6" />
-        <Skeleton v-if="isLoading && itemList.length === 0" type="grid" :count="limit" />
+        <div v-if="isLoading && itemList.length === 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <Skeleton v-for="i in limit" :key="i" class="h-32 w-full rounded-lg" />
+        </div>
         <div v-else-if="itemList.length > 0"
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          <!-- Residence Card -->
+             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           <div v-for="residence in itemList" :key="residence.id"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 border border-gray-200 dark:border-gray-700 flex flex-col"
-            @click="getResidenceDetail(residence.id)" role="button"
-            :aria-label="`View details for Residence ${residence.building}-${residence.room}`">
-            <!-- Card Header -->
+               class="bg-white rounded-lg shadow-md p-4 cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 border border-blue-100 flex flex-col"
+               @click="getResidenceDetail(residence.id)" role="button"
+               :aria-label="`View details for Residence ${residence.building}-${residence.room}`">
             <div class="flex justify-between items-start mb-3 gap-2">
               <h2 class="font-semibold text-black line-clamp-1 break-all flex-1"
-                :title="`Building ${residence.building}, Room ${residence.room}`">
-                <i class="pi pi-building mr-2 text-xs"></i>{{ `Building ${residence.building} / Room ${residence.room}`
-                }}
+                  :title="`Building ${residence.building}, Room ${residence.room}`">
+                <span class="mr-2 text-xs">🏢</span>{{ `Building ${residence.building} / Room ${residence.room}` }}
               </h2>
             </div>
-
-            <!-- Card Footer -->
-            <div
-              class="text-xs text-gray-400 dark:text-gray-500 mt-auto pt-2 border-t border-gray-100 dark:border-gray-700/50">
+            <div class="text-xs text-gray-400 mt-auto pt-2 border-t border-gray-100">
               ID: {{ residence.id }}
             </div>
           </div>
           <div v-if="isLoading && itemList.length > 0" class="col-span-full text-center py-4">
-            <i class="pi pi-spin pi-spinner text-primary" style="font-size: 1.5rem"></i> Loading more...
+            <Skeleton class="h-6 w-24 mx-auto" />
+            <span class="text-gray-500 ml-2">Loading more...</span>
           </div>
         </div>
-
-        <!-- Empty State -->
         <EmptyMessage v-else-if="!isLoading && itemList.length === 0" message="No Residences Found."
-          @refresh="refreshData" icon="pi pi-building" />
-
+                      @refresh="refreshData" :icon="RefreshCw" />
 
         <!-- Residence Detail Dialog -->
-        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
-          :style="{ width: '90%', maxWidth: '600px' }" @after-hide="resetAddFields"
-          contentClass="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100 !rounded-lg !shadow-xl !p-0">
-
-          <div>
-            <!-- Dialog Header -->
-            <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                {{ isEditing ? 'Edit Residence' : 'Residence Details' }}
-              </h2>
-              <Button icon="pi pi-times"
-                class="p-button-text p-button-rounded !w-8 !h-8 !text-gray-500 dark:!text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-primary-500/50"
-                @click="closeDialogAndReset('view')" aria-label="Close dialog" />
-            </div>
-
-            <!-- Detail Loading Skeleton -->
-            <div v-if="isDetailLoading" class="p-6 text-center text-gray-500 dark:text-gray-400">
-              <!-- Simple spinner or use Skeleton component -->
-              <i class="pi pi-spin pi-spinner text-primary" style="font-size: 2rem"></i>
-              <p>Loading Details...</p>
-            </div>
-
-            <!-- Residence Details Content -->
-            <div v-if="selectedItem && !isDetailLoading" class="p-5 md:p-6 max-h-[70vh] overflow-y-auto">
-              <div class="space-y-4">
-                <!-- Detail Row: ID -->
-                <div class="flex justify-between items-start py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">ID</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right break-all">{{ selectedItem.id
-                  }}</span>
-                </div>
-                <!-- Detail Row: Building -->
-                <div class="flex justify-between items-start py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Building</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ selectedItem.building }}</span>
-                </div>
-                <!-- Detail Row: Room -->
-                <div class="flex justify-between items-start py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Room</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ selectedItem.room }}</span>
-                </div>
-
-                <!-- === Residents Section === -->
-                <div class="pt-2 border-t border-gray-200 dark:border-gray-700/50">
-                  <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Residents</span>
-                  </div>
-
-                  <!-- Residents list -->
-                  <div v-if="selectedItem.residents?.length" class="space-y-2 mb-3 max-h-40 overflow-y-auto pr-1">
-                    <div v-for="resident in selectedItem.residents" :key="resident.id"
-                      class="flex items-center justify-between p-2 rounded bg-gray-100 dark:bg-gray-700/50">
-                      <div class="flex items-center gap-2">
-                        <i class="pi pi-user text-primary dark:text-primary-300"></i>
-                        <div class="flex flex-col leading-tight">
-                          <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ resident.name }}</span>
-                        </div>
-                      </div>
-                      <Button v-if="isEditing && isAdmin" icon="pi pi-trash"
-                        class="p-button-sm p-button-rounded p-button-danger p-button-text !w-6 !h-6 !text-xs"
-                        aria-label="Remove resident" @click="removeResident(resident.id)"
-                        v-tooltip.left="'Remove Resident'" />
-                    </div>
-                  </div>
-                  <div v-else-if="!isEditing" class="text-sm text-gray-400 dark:text-gray-500 italic mb-3">No residents
-                    assigned</div>
-
-                  <!-- Add resident input (when editing) -->
-                  <div v-if="isEditing && isAdmin" class="relative">
-                    <label for="add-resident-input" class="text-xs font-medium text-gray-500 dark:text-gray-400">Add
-                      Resident</label>
-                    <div class="flex gap-2 items-center mt-1">
-                      <div class="relative flex-grow">
-                        <InputText v-model="residentInput" inputId="add-resident-input"
-                          placeholder="Search by Name or Email" class="w-full text-sm"
-                          @focus="isUserSearchDropdownVisible = true" aria-autocomplete="list"
-                          aria-controls="add-resident-dropdown" />
-                        <!-- User Search Dropdown -->
-                        <div id="add-resident-dropdown" v-if="isUserSearchDropdownVisible && searchedUsers.length > 0"
-                          class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                          <div v-for="userOption in searchedUsers" :key="userOption.id"
-                            class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
-                            @click="selectResidentToAdd(userOption)">
-                            <div class="flex items-center">
-                              <span class="font-normal block truncate">{{ userOption.name }}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                              {{ userOption.username }} - {{ userOption.email }}
-                            </div>
+        <Dialog v-model:open="dialogs.view">
+          <DialogContent class="max-w-5xl w-full p-0">
+            <div>
+              <div class="flex justify-between items-center p-8 border-b border-blue-100">
+                <h2 class="text-2xl font-semibold text-gray-800">
+                  {{ isEditing ? 'Edit Residence' : 'Residence Details' }}
+                </h2>
+              </div>
+              <div v-if="isDetailLoading" class="p-10 text-center text-gray-500">
+                <Skeleton class="h-6 w-2/5 mb-4 mx-auto" />
+                <Skeleton class="h-4 w-full mb-2" />
+                <Skeleton class="h-16 w-full mb-4" />
+                <Skeleton class="h-5 w-3/5 mx-auto" />
+                <p>Loading Details...</p>
+              </div>
+              <div v-if="selectedItem && !isDetailLoading" class="p-8 md:p-10 max-h-[80vh] overflow-y-auto">
+                <div class="flex flex-col md:flex-row gap-10">
+                  <!-- Residents Column -->
+                  <div class="flex-1 min-w-0">
+                    <div class="font-semibold text-blue-700 mb-4">Residents</div>
+                    <div v-if="selectedItem.residents?.length" class="space-y-3 mb-4 max-h-80 overflow-y-auto pr-1">
+                      <div v-for="resident in selectedItem.residents" :key="resident.id"
+                           class="flex items-center justify-between p-3 rounded bg-blue-50">
+                        <div class="flex items-center gap-3">
+                          <span class="text-blue-600 text-lg">👤</span>
+                          <div class="flex flex-col leading-tight">
+                            <span class="text-base font-medium text-gray-700">{{ resident.name }}</span>
                           </div>
                         </div>
-                        <div
-                          v-if="isUserSearchDropdownVisible && searchedUsers.length === 0 && residentInput.length >= 2"
-                          class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md p-3 text-sm text-gray-500 dark:text-gray-400">
-                          No matching users found.
-                        </div>
+                        <Button v-if="isEditing && isAdmin" variant="destructive" size="icon"
+                                @click="removeResident(resident.id)">
+                          <Trash2 />
+                        </Button>
                       </div>
-                      <Button icon="pi pi-plus" class="p-button-sm p-button-rounded" severity="success"
-                        aria-label="Add selected resident" @click="addResident" :disabled="!selectedResidentToAdd"
-                        v-tooltip.bottom="'Add Selected Resident'" />
                     </div>
-                  </div>
-                </div>
-
-                <!-- === Vehicles Section === -->
-                <div class="pt-2 border-t border-gray-200 dark:border-gray-700/50">
-                  <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Vehicles</span>
-                  </div>
-
-                  <!-- Vehicles list -->
-                  <div v-if="selectedItem.vehicles?.length" class="space-y-2 mb-3 max-h-40 overflow-y-auto pr-1">
-                    <div v-for="vehicle in selectedItem.vehicles" :key="vehicle.id"
-                      class="flex items-center justify-between p-2 rounded bg-gray-100 dark:bg-gray-700/50">
-                      <div class="flex items-center gap-2">
-                        <i :class="[getVehicleTypeIcon(vehicle.type), 'text-primary dark:text-primary-300']"></i>
-                        <div class="flex flex-col leading-tight">
-                          <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ vehicle.plate }}</span>
-                          <span class="text-xs text-gray-500 dark:text-gray-400">{{ vehicle.type }}</span>
-                        </div>
-                      </div>
-                      <Button v-if="isEditing && isAdmin" icon="pi pi-trash"
-                        class="p-button-sm p-button-rounded p-button-danger p-button-text !w-6 !h-6 !text-xs"
-                        aria-label="Remove vehicle" @click="removeVehicle(vehicle.id)"
-                        v-tooltip.left="'Remove Vehicle'" />
-                    </div>
-                  </div>
-                  <div v-else-if="!isEditing" class="text-sm text-gray-400 dark:text-gray-500 italic mb-3">No vehicles
-                    registered</div>
-
-                  <!-- Add vehicle input (when editing) -->
-                  <div v-if="isEditing && isAdmin" class="relative">
-                    <label for="add-vehicle-input" class="text-xs font-medium text-gray-500 dark:text-gray-400">Add
-                      Vehicle</label>
-                    <div class="flex gap-2 items-center mt-1">
-                      <div class="relative flex-grow">
-                        <InputText v-model="vehicleInput" inputId="add-vehicle-input"
-                          placeholder="Search by License Plate" class="w-full text-sm"
-                          @focus="isVehicleSearchDropdownVisible = true" aria-autocomplete="list"
-                          aria-controls="add-vehicle-dropdown" />
-                        <!-- Vehicle Search Dropdown -->
-                        <div id="add-vehicle-dropdown"
-                          v-if="isVehicleSearchDropdownVisible && searchedVehicles.length > 0"
-                          class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                          <div v-for="vehicleOption in searchedVehicles" :key="vehicleOption.id"
-                            class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
-                            @click="selectVehicleToAdd(vehicleOption)">
-                            <div class="flex items-center">
-                              <i
-                                :class="[getVehicleTypeIcon(vehicleOption.type), 'mr-2 text-primary dark:text-primary-300 text-xs']"></i>
-                              <span class="font-normal block truncate">{{ vehicleOption.plate }}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 ml-5">
-                              {{ vehicleOption.type }}
+                    <div v-else-if="!isEditing" class="text-base text-gray-400 italic mb-4">No residents assigned</div>
+                    <div v-if="isEditing && isAdmin" class="relative">
+                      <label for="add-resident-input" class="text-xs font-medium text-gray-500">Add Resident</label>
+                      <div class="flex gap-2 items-center mt-2">
+                        <div class="relative flex-grow">
+                          <InputText v-model="residentInput" inputId="add-resident-input"
+                                     placeholder="Search by name or email" class="w-full text-base"
+                                     @focus="isUserSearchDropdownVisible = true" aria-autocomplete="list"
+                                     aria-controls="add-resident-dropdown" />
+                          <div id="add-resident-dropdown" v-if="isUserSearchDropdownVisible && searchedUsers.length > 0"
+                               class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+                            <div v-for="userOption in searchedUsers" :key="userOption.id"
+                                 class="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                                 @click="selectResidentToAdd(userOption)">
+                              <span class="font-medium">{{ userOption.name }}</span>
+                              <span class="text-xs text-gray-500 ml-2">{{ userOption.email }}</span>
                             </div>
                           </div>
+                          <div v-if="isUserSearchDropdownVisible && searchedUsers.length === 0 && residentInput.length >= 2"
+                               class="absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md p-3 text-base text-gray-500">
+                            No matching users found.
+                          </div>
                         </div>
-                        <div
-                          v-if="isVehicleSearchDropdownVisible && searchedVehicles.length === 0 && vehicleInput.length >= 2"
-                          class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md p-3 text-sm text-gray-500 dark:text-gray-400">
-                          No matching vehicles found.
-                        </div>
+                        <Button variant="secondary" size="icon" @click="addResident" :disabled="!selectedResidentToAdd">
+                          <span class="text-lg">+</span>
+                        </Button>
                       </div>
-                      <!-- Add Vehicle Button -->
-                      <Button icon="pi pi-plus" class="p-button-sm p-button-rounded" severity="success"
-                        aria-label="Add selected vehicle" @click="addVehicle" :disabled="!selectedVehicleToAdd"
-                        v-tooltip.bottom="'Add Selected Vehicle'" />
+                    </div>
+                  </div>
+                  <!-- Vehicles Column -->
+                  <div class="flex-1 min-w-0">
+                    <div class="font-semibold text-blue-700 mb-4">Vehicles</div>
+                    <div v-if="selectedItem.vehicles?.length" class="space-y-3 mb-4 max-h-80 overflow-y-auto pr-1">
+                      <div v-for="vehicle in selectedItem.vehicles" :key="vehicle.id"
+                           class="flex items-center justify-between p-3 rounded bg-blue-50">
+                        <div class="flex items-center gap-3">
+                          <span class="text-blue-600 text-lg">{{ getVehicleTypeIcon(vehicle.type) }}</span>
+                          <div class="flex flex-col leading-tight">
+                            <span class="text-base font-medium text-gray-700">{{ vehicle.plate }}</span>
+                            <span class="text-xs text-gray-500">{{ vehicle.type }}</span>
+                          </div>
+                        </div>
+                        <Button v-if="isEditing && isAdmin" variant="destructive" size="icon"
+                                @click="removeVehicle(vehicle.id)">
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    </div>
+                    <div v-else-if="!isEditing" class="text-base text-gray-400 italic mb-4">No vehicles registered</div>
+                    <div v-if="isEditing && isAdmin" class="relative">
+                      <label for="add-vehicle-input" class="text-xs font-medium text-gray-500">Add Vehicle</label>
+                      <div class="flex gap-2 items-center mt-2">
+                        <div class="relative flex-grow">
+                          <InputText v-model="vehicleInput" inputId="add-vehicle-input"
+                                     placeholder="Search by License Plate" class="w-full text-base"
+                                     @focus="isVehicleSearchDropdownVisible = true" aria-autocomplete="list"
+                                     aria-controls="add-vehicle-dropdown" />
+                          <div id="add-vehicle-dropdown"
+                               v-if="isVehicleSearchDropdownVisible && searchedVehicles.length > 0"
+                               class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+                            <div v-for="vehicleOption in searchedVehicles" :key="vehicleOption.id"
+                                 class="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                                 @click="selectVehicleToAdd(vehicleOption)">
+                              <span class="font-medium">{{ vehicleOption.plate }}</span>
+                              <span class="text-xs text-gray-500 ml-2">{{ vehicleOption.type }}</span>
+                            </div>
+                          </div>
+                          <div v-if="isVehicleSearchDropdownVisible && searchedVehicles.length === 0 && vehicleInput.length >= 2"
+                               class="absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md p-3 text-base text-gray-500">
+                            No matching vehicles found.
+                          </div>
+                        </div>
+                        <Button variant="secondary" size="icon" @click="addVehicle" :disabled="!selectedVehicleToAdd">
+                          <span class="text-lg">+</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-
-                <!-- Detail Row: Created At -->
-                <div
-                  class="flex justify-between items-start py-1 pt-3 border-t border-gray-200 dark:border-gray-700/50">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Created At</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new
-                    Date(selectedItem.createdAt).toLocaleString() }}</span>
-                </div>
-                <!-- Detail Row: Updated At -->
-                <div class="flex justify-between items-start py-1">
-                  <span class="text-sm font-medium text-gray-500 dark:text-gray-400 w-1/3">Updated At</span>
-                  <span class="text-sm text-gray-800 dark:text-gray-100 text-right">{{ new
-                    Date(selectedItem.updatedAt).toLocaleString() }}</span>
+                <!-- General Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+                  <div>
+                    <div class="flex justify-between items-start py-2">
+                      <span class="text-base font-medium text-gray-500 w-1/3">ID</span>
+                      <span class="text-base text-gray-800 text-right break-all">{{ selectedItem.id }}</span>
+                    </div>
+                    <div class="flex justify-between items-start py-2">
+                      <span class="text-base font-medium text-gray-500 w-1/3">Building</span>
+                      <span class="text-base text-gray-800 text-right">{{ selectedItem.building }}</span>
+                    </div>
+                    <div class="flex justify-between items-start py-2">
+                      <span class="text-base font-medium text-gray-500 w-1/3">Room</span>
+                      <span class="text-base text-gray-800 text-right">{{ selectedItem.room }}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between items-start py-2">
+                      <span class="text-base font-medium text-gray-500 w-1/3">Created At</span>
+                      <span class="text-base text-gray-800 text-right">{{ new Date(selectedItem.createdAt).toLocaleString() }}</span>
+                    </div>
+                    <div class="flex justify-between items-start py-2">
+                      <span class="text-base font-medium text-gray-500 w-1/3">Updated At</span>
+                      <span class="text-base text-gray-800 text-right">{{ new Date(selectedItem.updatedAt).toLocaleString() }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <DialogFooter class="flex justify-end gap-4 p-6 border-t border-blue-100 bg-blue-50 rounded-b-lg">
+                <template v-if="selectedItem && !isDetailLoading">
+                  <template v-if="!isEditing">
+                    <Button v-if="isAdmin" variant="secondary" @click="toggleEditMode"
+                            class="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Pencil class="w-5 h-5 mr-2" />
+                      Edit
+                    </Button>
+                    <Button v-if="isAdmin" variant="destructive" @click="deleteResidence">
+                      <Trash2 class="w-5 h-5 mr-2" />
+                      Delete
+                    </Button>
+                  </template>
+                  <template v-else>
+                    <Button v-if="isAdmin" variant="secondary" @click="updateResidence" class="bg-green-600 hover:bg-green-700 text-white">
+                      <Save class="w-5 h-5 mr-2" />
+                      Save
+                    </Button>
+                    <Button v-if="isAdmin" variant="outline" @click="toggleEditMode">
+                      Cancel Edit
+                    </Button>
+                  </template>
+                  <Button variant="ghost" @click="closeDialogAndReset('view')">
+                    Close
+                  </Button>
+                </template>
+              </DialogFooter>
             </div>
-
-            <!-- Dialog Actions/Footer -->
-            <div v-if="selectedItem && !isDetailLoading"
-              class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
-              <template v-if="!isEditing">
-                <Button v-if="isAdmin" label="Edit" icon="pi pi-pencil" class="p-button-sm p-button-outlined
-                             !border-accent !bg-accent !text-white hover:!bg-accent/80
-                             focus:!ring-2 focus:!ring-accent/50" @click="toggleEditMode" />
-                <Button v-if="isAdmin" label="Delete" icon="pi pi-trash" class="p-button-sm p-button-outlined
-                             !border-red-500 !bg-red-500 !text-white hover:!bg-red-700
-                             focus:!ring-2 focus:!ring-red-500" @click="deleteResidence" />
-              </template>
-              <template v-else>
-                <Button v-if="isAdmin" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
-                             !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
-                             focus:!ring-2 focus:!ring-green-500/50" @click="updateResidence"
-                  v-tooltip.bottom="'Saves general edits (if any). Resident/Vehicle adds are immediate.'" />
-                <Button v-if="isAdmin" label="Cancel Edit" icon="pi pi-times" class="p-button-sm p-button-outlined
-                             !border-gray-400 !bg-gray-400 !text-white hover:!bg-gray-500
-                             focus:!ring-2 focus:!ring-gray-400/50" @click="toggleEditMode" />
-              </template>
-              <Button label="Close" class="p-button-sm p-button-text
-                           !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
-                           focus:!ring-2 focus:!ring-gray-500/50" @click="closeDialogAndReset('view')" />
-            </div>
-          </div>
+          </DialogContent>
         </Dialog>
 
-        <!-- Create Residence Dialog (remains largely unchanged) -->
-        <Dialog v-model:visible="dialogs.create" modal :closable="true" :showHeader="false"
-          :style="{ width: '90%', maxWidth: '500px' }" @after-hide="createResidencePayload = { building: '', room: 0 }"
-          contentClass="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-gray-100 !rounded-lg !shadow-xl !p-0">
-          <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Create New Residence</h2>
-            <Button icon="pi pi-times"
-              class="w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:ring-2 focus:!ring-primary-500/50"
-              @click="closeDialog('create')" aria-label="Close dialog" unstyled />
-          </div>
-          <div class="p-5 md:p-6 space-y-4">
-            <InputText v-model="createResidencePayload.building" inputId="createResidenceBuilding"
-              placeholder="Enter residence building" />
-            <InputNumber v-model="createResidencePayload.room" inputId="createResidenceRoom"
-              placeholder="Enter residence room" />
-          </div>
-          <div
-            class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button v-if="isAdmin" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
-                           !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
-                           focus:!ring-2 focus:!ring-accent/50" @click="createResidence"
-              :disabled="!createResidencePayload.building || createResidencePayload.room <= 0" />
-            <Button label="Cancel" class="p-button-sm p-button-text
-                           !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700
-                           focus:!ring-2 focus:!ring-gray-500/50" @click="closeDialog('create')" />
-          </div>
+        <!-- Create Residence Dialog -->
+        <Dialog v-model:open="dialogs.create">
+          <DialogContent class="max-w-md w-full p-0">
+            <div class="flex justify-between items-center p-5 border-b border-blue-100">
+              <h2 class="text-xl font-semibold text-gray-800">Create New Residence</h2>
+              <Button variant="ghost" size="icon" @click="closeDialog('create')" aria-label="Close dialog">
+                <span class="text-lg">×</span>
+              </Button>
+            </div>
+            <div class="p-5 md:p-6 space-y-4">
+              <InputText v-model="createResidencePayload.building" inputId="createResidenceBuilding"
+                         placeholder="Enter residence building" />
+              <InputNumber v-model="createResidencePayload.room" inputId="createResidenceRoom"
+                           placeholder="Enter residence room" />
+            </div>
+            <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-xl">
+              <Button v-if="isAdmin" variant="secondary" @click="createResidence"
+                      :disabled="!createResidencePayload.building || createResidencePayload.room <= 0">
+                Save
+              </Button>
+              <Button variant="ghost" @click="closeDialog('create')">
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </div>
     </div>
-
     <FloatingButton v-if="isAdmin" icon="+" @click="openDialog('create')" aria-label="Add new residence" />
   </MenuLayout>
 </template>
-
-<style scoped>
-</style>

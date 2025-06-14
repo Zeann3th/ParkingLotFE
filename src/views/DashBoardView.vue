@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { toast } from 'vue-sonner';
 import { useRouter } from 'vue-router';
-import MenuLayout from '@/components/MenuLayout.vue';
-import Skeleton from '@/components/Skeleton.vue';
+import MenuLayout from '@/components/Menu/MenuLayout.vue';
+import { Skeleton } from '@/components/ui/skeleton';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import Title from '@/components/Title.vue';
-import Button from 'primevue/button';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 import { useState } from '@/composables/state';
 import { ticketService } from '@/services/ticket.service';
 import { residenceService } from '@/services/residence.service';
 import type { Residence, Ticket } from '@/types';
 
-const toast = useToast();
 const router = useRouter();
 
 const ticketState = useState<Ticket>();
 const DASHBOARD_LIMIT = 4;
-
 const residenceState = useState<Residence>();
 
 const fetchTicketSummary = async () => {
@@ -28,7 +28,7 @@ const fetchTicketSummary = async () => {
     ticketState.itemList.value = response.data;
   } catch (error) {
     console.error("Error fetching ticket summary:", error);
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
+    toast.error("Error fetching ticket summary");
     ticketState.itemList.value = [];
   } finally {
     ticketState.isLoading.value = false;
@@ -42,7 +42,7 @@ const fetchResidenceSummary = async () => {
     residenceState.itemList.value = response.data;
   } catch (error) {
     console.error("Error fetching residence summary:", error);
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000 });
+    toast.error("Error fetching residence summary");
     residenceState.itemList.value = [];
   } finally {
     residenceState.isLoading.value = false;
@@ -64,14 +64,12 @@ const getTypeLabel = (type: string | null | undefined) => {
   }
 };
 
-const getStatusBadgeClasses = (status: string | undefined) => {
-  const base = 'text-xs font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap inline-block';
-  if (!status) return `${base} !bg-gray-100 !text-gray-700 dark:!bg-gray-700/50 dark:!text-gray-300`;
+const getStatusBadgeVariant = (status: string | undefined) => {
   switch (status) {
-    case 'AVAILABLE': return `${base} !bg-green-100 !text-green-700 dark:!bg-green-900/50 dark:!text-green-300`;
-    case 'INUSE': return `${base} !bg-blue-100 !text-blue-700 dark:!bg-blue-900/50 dark:!text-blue-300`;
-    case 'LOST': return `${base} !bg-red-100 !text-red-700 dark:!bg-red-900/50 dark:!text-red-300`;
-    default: return `${base} !bg-gray-100 !text-gray-700 dark:!bg-gray-700/50 dark:!text-gray-300`;
+    case 'AVAILABLE': return 'default';
+    case 'INUSE': return 'secondary';
+    case 'LOST': return 'destructive';
+    default: return 'outline';
   }
 };
 
@@ -88,88 +86,81 @@ const refreshAll = () => {
   residenceState.isMutated.value = true;
   fetchTicketSummary().finally(() => ticketState.isMutated.value = false);
   fetchResidenceSummary().finally(() => residenceState.isMutated.value = false);
-  toast.add({ severity: 'success', summary: 'Refreshed', detail: 'Dashboard data updated.', life: 1500 });
-}
-
+  toast.success('Dashboard data updated.');
+};
 </script>
 
 <template>
   <MenuLayout>
-    <div class="min-h-screen !bg-gray-50 dark:!bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
-      <div class="max-w-7xl mx-auto space-y-8">
+    <div class="min-h-screen bg-white">
+      <div class="max-w-6xl mx-auto px-6 py-12 space-y-12">
 
         <Title name="Dashboard Overview" subtext="Summary of recent activity" @refresh="refreshAll" />
 
         <!-- Tickets Section -->
         <section aria-labelledby="tickets-heading">
           <div class="flex justify-between items-center mb-4">
-            <h2 id="tickets-heading" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Recent Tickets</h2>
-            <Button label="View All Tickets" icon="pi pi-arrow-right" iconPos="right"
-              class="p-button-sm p-button-text !text-primary hover:!text-primary/80" @click="goToTickets" />
+            <h2 id="tickets-heading" class="text-3xl font-light text-gray-900">Recent Tickets</h2>
+            <Button variant="ghost" @click="goToTickets" class="hover:text-blue-600 hover:bg-blue-50">
+              View All Tickets
+            </Button>
           </div>
 
-          <!-- Skeleton Loading for Tickets -->
-          <Skeleton v-if="ticketState.isLoading.value" type="list" :count="DASHBOARD_LIMIT" />
-
-          <!-- Ticket List -->
-          <div v-else-if="ticketState.itemList.value.length > 0" class="space-y-3">
-            <div v-for="ticket in ticketState.itemList.value" :key="ticket.id" class="
-                 bg-white dark:bg-gray-800
-                 rounded-md shadow-sm
-                 border border-gray-200 dark:border-gray-700
-                 p-3 flex justify-between items-center gap-3
-               ">
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
-                  Ticket ID: {{ ticket.id }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Type: {{ getTypeLabel(ticket.type) }}
-                </p>
+          <Card class="overflow-hidden border-blue-100 shadow-xl">
+            <CardContent class="p-0">
+              <div v-if="ticketState.isLoading.value" class="p-6 space-y-4">
+                <Skeleton v-for="i in DASHBOARD_LIMIT" :key="i" class="h-12 w-full rounded" />
               </div>
-              <span :class="getStatusBadgeClasses(ticket.status)">
-                {{ ticket.status ?? 'UNKNOWN' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Empty State for Tickets -->
-          <EmptyMessage v-else message="No recent tickets found." class="mt-4" :show-refresh="false" />
+              <div v-else-if="ticketState.itemList.value.length > 0" class="divide-y divide-gray-100">
+                <div v-for="ticket in ticketState.itemList.value" :key="ticket.id"
+                     class="flex justify-between items-center px-6 py-4 hover:bg-blue-50/30 transition-colors duration-200">
+                  <div>
+                    <p class="text-base font-medium text-gray-900">Ticket ID: {{ ticket.id }}</p>
+                    <p class="text-sm text-gray-600">Type: {{ getTypeLabel(ticket.type) }}</p>
+                  </div>
+                  <Badge :variant="getStatusBadgeVariant(ticket.status)"
+                         :class="{
+                           'bg-blue-100 text-blue-700 hover:bg-blue-200': ticket.status === 'AVAILABLE',
+                           'bg-blue-50 text-blue-600 hover:bg-blue-100': ticket.status === 'INUSE',
+                           'border-blue-300 text-blue-700 hover:bg-blue-50': ticket.status === 'LOST'
+                         }">
+                    {{ ticket.status ?? 'UNKNOWN' }}
+                  </Badge>
+                </div>
+              </div>
+              <EmptyMessage v-else message="No recent tickets found." class="mt-4" :show-refresh="false" />
+            </CardContent>
+          </Card>
         </section>
 
         <!-- Residences Section -->
         <section aria-labelledby="residences-heading">
           <div class="flex justify-between items-center mb-4">
-            <h2 id="residences-heading" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Recent Residences
-            </h2>
-            <Button label="View All Residences" icon="pi pi-arrow-right" iconPos="right"
-              class="p-button-sm p-button-text !text-primary hover:!text-primary/80" @click="goToResidences" />
+            <h2 id="residences-heading" class="text-3xl font-light text-gray-900">Recent Residences</h2>
+            <Button variant="ghost" @click="goToResidences" class="hover:text-blue-600 hover:bg-blue-50">
+              View All Residences
+            </Button>
           </div>
 
-          <!-- Skeleton Loading for Residences -->
-          <Skeleton v-if="residenceState.isLoading.value" type="list" :count="DASHBOARD_LIMIT" />
-
-          <!-- Residence List -->
-          <div v-else-if="residenceState.itemList.value.length > 0" class="space-y-3">
-            <div v-for="residence in residenceState.itemList.value" :key="residence.id" class="
-                 bg-white dark:bg-gray-800
-                 rounded-md shadow-sm
-                 border border-gray-200 dark:border-gray-700
-                 p-3 flex justify-between items-center gap-3
-               ">
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
-                  {{ `Building ${residence.building} / Room ${residence.room}` }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  ID: {{ residence.id }}
-                </p>
+          <Card class="overflow-hidden border-blue-100 shadow-xl">
+            <CardContent class="p-0">
+              <div v-if="residenceState.isLoading.value" class="p-6 space-y-4">
+                <Skeleton v-for="i in DASHBOARD_LIMIT" :key="i" class="h-12 w-full rounded" />
               </div>
-            </div>
-          </div>
-
-          <!-- Empty State for Residences -->
-          <EmptyMessage v-else message="No recent residences found." class="mt-4" :show-refresh="false" />
+              <div v-else-if="residenceState.itemList.value.length > 0" class="divide-y divide-gray-100">
+                <div v-for="residence in residenceState.itemList.value" :key="residence.id"
+                     class="flex justify-between items-center px-6 py-4 hover:bg-blue-50/30 transition-colors duration-200">
+                  <div>
+                    <p class="text-base font-medium text-gray-900">
+                      {{ `Building ${residence.building} / Room ${residence.room}` }}
+                    </p>
+                    <p class="text-sm text-gray-600">ID: {{ residence.id }}</p>
+                  </div>
+                </div>
+              </div>
+              <EmptyMessage v-else message="No recent residences found." class="mt-4" :show-refresh="false" />
+            </CardContent>
+          </Card>
         </section>
 
       </div>

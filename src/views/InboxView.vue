@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useAuth } from '@/composables/auth';
-import { Dialog, Skeleton, Button, Textarea, ConfirmDialog, useToast, useConfirm } from 'primevue';
-import MenuLayout from '@/components/MenuLayout.vue';
+import { toast } from 'vue-sonner';
+import MenuLayout from '@/components/Menu/MenuLayout.vue';
 import type { Notification } from '@/types';
 import { notificationService } from '@/services/notification.service';
 import { formatDate, truncateStr } from '@/utils';
@@ -12,11 +11,16 @@ import EmptyMessage from '@/components/EmptyMessage.vue';
 import { useState } from '@/composables/state';
 import Avatar from '@/components/Avatar.vue';
 import InputText from '@/components/InputText.vue';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+
+import { useAuth } from '@/composables/auth';
+import { Bell } from 'lucide-vue-next';
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Notification>();
 const { role } = useAuth();
-const toast = useToast();
-const confirm = useConfirm();
 
 const newNotification = ref({
   to: '' as string,
@@ -28,13 +32,13 @@ const getAllNotifications = async () => {
   try {
     const response = await notificationService.getAll(page.value, limit.value, { cache: !isMutated.value });
     if (response.message) {
-      toast.add({ severity: 'error', summary: 'Error', detail: response.message, life: 3000, });
+      toast.error(response.message);
     } else {
       itemList.value = response.data;
       maxPage.value = response.maxPage;
     }
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
+    toast.error(error?.toString() ?? 'Error loading notifications');
   } finally {
     isLoading.value = false;
   }
@@ -52,7 +56,7 @@ const getNotificationDetail = async (id: number) => {
       await readNotification(id);
     }
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
+    toast.error(error?.toString() ?? 'Error loading notification');
   } finally {
     isDetailLoading.value = false;
   }
@@ -63,31 +67,20 @@ const readNotification = async (id: number) => {
     await notificationService.update(id)
     refreshData();
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
+    toast.error(error?.toString() ?? 'Error updating notification');
   }
 };
 
-const deleteNotification = (id: number) => {
-  confirm.require({
-    message: 'Are you sure you want to delete this notification?',
-    header: 'Delete Confirmation',
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
-    accept: async () => {
-      try {
-        await notificationService.delete(id);
-        refreshData();
-      } catch (error) {
-        console.error('Error deleting notification:', error);
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error,
-          life: 3000,
-        });
-      }
-    }
-  });
+const deleteNotification = async (id: number) => {
+  if (!confirm('Are you sure you want to delete this notification?')) return;
+  try {
+    await notificationService.delete(id);
+    refreshData();
+    toast.success('Notification deleted');
+    closeDialog('view');
+  } catch (error) {
+    toast.error(error?.toString() ?? 'Error deleting notification');
+  }
 };
 
 const openNewNotificationDialog = () => {
@@ -100,7 +93,7 @@ const openNewNotificationDialog = () => {
 
 const sendNotification = async () => {
   if (!newNotification.value.message.trim()) {
-    toast.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a message', life: 3000, });
+    toast.warning('Please enter a message');
     return;
   }
 
@@ -119,8 +112,9 @@ const sendNotification = async () => {
     newNotification.value = { to: '', message: '' };
     closeDialog('create');
     refreshData();
+    toast.success('Notification sent');
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error, life: 3000, });
+    toast.error(error?.toString() ?? 'Error sending notification');
   }
 };
 
@@ -144,20 +138,22 @@ onMounted(() => {
 
 <template>
   <MenuLayout>
-    <div class="min-h-screen p-4 md:p-6">
+    <div class="min-h-screen bg-white px-4 md:px-6 py-8">
       <div class="max-w-4xl mx-auto">
         <Title name="Notifications" @click="getAllNotifications" />
 
         <!-- Skeleton Loading -->
-        <Skeleton v-if="isLoading" />
+        <div v-if="isLoading" class="space-y-3">
+          <Skeleton v-for="i in 4" :key="i" class="h-16 w-full rounded" />
+        </div>
 
         <!-- Notifications List -->
         <div v-else class="space-y-3">
           <div v-for="notification in itemList" :key="notification.id" :class="[
-            'bg-white hover:bg-gray-50 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 shadow border',
+            'bg-white hover:bg-blue-50/30 transition-all duration-200 rounded-lg p-4 flex items-start space-x-4 shadow border',
             notification.status === 'READ'
               ? 'border-gray-200 opacity-80'
-              : 'border-green-500'
+              : 'border-blue-400'
           ]">
             <div class="flex-1 flex items-start cursor-pointer" @click="getNotificationDetail(notification.id)">
               <!-- Avatar -->
@@ -174,128 +170,118 @@ onMounted(() => {
                   {{ truncateStr(notification.message) }}
                 </div>
                 <div v-if="notification.status === 'PENDING'" class="mt-2">
-                  <span class="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">New</span>
+                  <Badge variant="secondary" class="bg-green-100 text-green-800 border-green-200">New</Badge>
                 </div>
               </div>
             </div>
 
             <!-- Delete button (Admin only) -->
             <div v-if="isAdmin" class="ml-2 flex-shrink-0" @click.stop>
-              <Button icon="pi pi-trash" class="!bg-red-400 !border-red-400"
-                @click="deleteNotification(notification.id)" />
+              <Button variant="destructive" size="icon" @click="deleteNotification(notification.id)">
+                <span class="sr-only">Delete</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                     viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round"
+                                               d="M6 18L18 6M6 6l12 12"/></svg>
+              </Button>
             </div>
           </div>
         </div>
 
         <!-- Empty State -->
         <div v-if="!isLoading && itemList.length === 0">
-          <EmptyMessage icon="pi pi-bell" message="No Notifications Found" @click="getAllNotifications" />
+          <EmptyMessage :icon="Bell" message="No Notifications Found" @click="getAllNotifications" />
         </div>
 
         <!-- Notification Detail Dialog -->
-        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
-          class="!bg-secondary !text-black !border !border-secondary rounded-lg shadow-lg"
-          :style="{ width: '90%', maxWidth: '600px' }">
-
-          <div class="p-4 md:p-6">
-            <!-- Loading Skeleton -->
-            <div v-if="isDetailLoading">
-              <Skeleton width="40%" height="2rem" class="mb-4"></Skeleton>
-              <Skeleton width="100%" height="1rem" class="mb-2"></Skeleton>
-              <Skeleton width="100%" height="4rem" class="mb-4"></Skeleton>
-              <Skeleton width="60%" height="1.5rem"></Skeleton>
-            </div>
-
-            <div v-else-if="selectedItem">
-              <div class="mb-6">
-                <div class="flex items-center space-x-3">
-                  <Avatar :name="selectedItem.from.username" :id="selectedItem.from.id" />
-                  <div>
-                    <h2 class="text-xl font-bold text-primary">{{ selectedItem.from.name }}</h2>
-                    <p class="text-sm text-black">@{{ selectedItem.from.username }}</p>
+        <Dialog v-model:open="dialogs.view">
+          <DialogContent class="max-w-lg w-full p-0">
+            <div class="p-6">
+              <div v-if="isDetailLoading">
+                <Skeleton class="h-6 w-2/5 mb-4" />
+                <Skeleton class="h-4 w-full mb-2" />
+                <Skeleton class="h-16 w-full mb-4" />
+                <Skeleton class="h-5 w-3/5" />
+              </div>
+              <div v-else-if="selectedItem">
+                <DialogHeader>
+                  <div class="flex items-center space-x-3 mb-4">
+                    <Avatar :name="selectedItem.from.username" :id="selectedItem.from.id" />
+                    <div>
+                      <DialogTitle class="text-xl font-bold text-blue-700">{{ selectedItem.from.name }}</DialogTitle>
+                      <p class="text-sm text-gray-500">@{{ selectedItem.from.username }}</p>
+                    </div>
+                  </div>
+                </DialogHeader>
+                <div class="space-y-4">
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-sm text-gray-500">Date</span>
+                    <span class="font-medium text-gray-800">{{ formatDate(selectedItem.createdAt) }}</span>
+                  </div>
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-sm text-gray-500">Status</span>
+                    <Badge :variant="selectedItem.status === 'READ' ? 'outline' : 'secondary'"
+                           :class="selectedItem.status === 'READ'
+                        ? 'bg-gray-200 text-gray-800 border-gray-200'
+                        : 'bg-green-100 text-green-800 border-green-200'">
+                      {{ selectedItem.status }}
+                    </Badge>
+                  </div>
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-sm text-gray-500">Message</span>
+                    <span class="font-medium text-gray-800 whitespace-pre-line">{{ selectedItem.message }}</span>
                   </div>
                 </div>
+                <DialogFooter class="flex justify-end mt-6 space-x-3">
+                  <Button v-if="isAdmin" variant="destructive" @click="deleteNotification(selectedItem.id)">
+                    Delete
+                  </Button>
+                  <Button variant="outline" @click="closeDialog('view')">
+                    Close
+                  </Button>
+                </DialogFooter>
               </div>
-
-              <div class="space-y-4">
-                <div class="flex flex-col space-y-1">
-                  <span class="text-sm text-gray-500">Date</span>
-                  <span class="font-medium text-gray-800">{{ formatDate(selectedItem.createdAt) }}</span>
-                </div>
-
-                <div class="flex flex-col space-y-1">
-                  <span class="text-sm text-gray-500">Status</span>
-                  <span :class="[
-                    'inline-block px-2 py-1 text-xs rounded-full',
-                    selectedItem.status === 'READ'
-                      ? 'bg-gray-200 text-gray-800'
-                      : 'bg-green-100 text-green-800'
-                  ]">
-                    {{ selectedItem.status }}
-                  </span>
-                </div>
-
-                <div class="flex flex-col space-y-1">
-                  <span class="text-sm text-gray-500">Message</span>
-                  <span class="font-medium text-gray-800 whitespace-pre-line">{{ selectedItem.message }}</span>
-                </div>
-              </div>
-
-              <div class="flex justify-end mt-6 space-x-3">
-                <Button v-if="isAdmin" icon="pi pi-trash" label="Delete"
-                  class="p-button-outlined p-button-danger text-red-600 border-red-400 hover:bg-red-50"
-                  @click="deleteNotification(selectedItem.id)" />
-                <Button label="Close" @click="closeDialog('view')"
-                  class="p-button-outlined text-gray-700 border-gray-400 hover:bg-gray-100" />
+              <div v-else class="text-center text-red-500 py-4">
+                Failed to load notification details.
               </div>
             </div>
-
-            <!-- Optional: Add an error state if needed -->
-            <div v-else class="text-center text-red-500 py-4">
-              Failed to load notification details.
-            </div>
-          </div>
+          </DialogContent>
         </Dialog>
 
         <!-- New Notification Dialog -->
-        <Dialog v-model:visible="dialogs.create" modal header="Create New Notification"
-          class="!bg-secondary !text-black border !border-secondary rounded-lg shadow-lg"
-          :style="{ width: '90%', maxWidth: '500px' }">
-
-          <!-- Dialog Content -->
-          <div class="p-4">
-            <div v-if="isPrivilleged" class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Recipient User ID
-                (Optional)</label>
-              <div class="flex items-center space-x-2">
-                <InputText v-model="newNotification.to" inputId="userId" placeholder="Enter user ID" />
+        <Dialog v-model:open="dialogs.create">
+          <DialogContent class="max-w-md w-full p-0">
+            <div class="p-6">
+              <DialogHeader>
+                <DialogTitle>Create New Notification</DialogTitle>
+              </DialogHeader>
+              <div v-if="isPrivilleged" class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Recipient User ID (Optional)</label>
+                <div class="flex items-center space-x-2">
+                  <InputText v-model="newNotification.to" inputId="userId" placeholder="Enter user ID" />
+                </div>
+                <div class="text-xs text-gray-500 mt-2">
+                  Leave empty to create a notification for all administrators.
+                </div>
               </div>
-              <div class="text-xs text-gray-500 mt-2">
-                Leave empty to create a notification for all administrators.
+              <div class="mb-4">
+                <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <textarea id="message" v-model="newNotification.message" rows="5"
+                          class="w-full bg-white text-black border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          placeholder="Type your message here..." />
               </div>
+              <DialogFooter class="flex justify-end space-x-3 mt-6">
+                <Button variant="outline" @click="cancelNewNotification">
+                  Cancel
+                </Button>
+                <Button class="bg-blue-600 hover:bg-blue-700 text-white shadow" @click="sendNotification">
+                  Send
+                </Button>
+              </DialogFooter>
             </div>
-
-            <!-- Message -->
-            <div class="mb-4">
-              <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
-              <Textarea id="message" v-model="newNotification.message" rows="5" class="w-full !bg-white !text-black"
-                placeholder="Type your message here..." />
-            </div>
-
-            <!-- Actions -->
-            <div class="flex justify-end space-x-3 mt-6">
-              <Button label="Cancel" class=" !text-white !border-primary !bg-primary !hover:bg-primary/80"
-                @click="cancelNewNotification" />
-              <Button label="Send" icon="pi pi-send"
-                class="!text-white !border-primary !bg-primary !hover:bg-primary/80" @click="sendNotification" />
-            </div>
-          </div>
+          </DialogContent>
         </Dialog>
-
-        <ConfirmDialog></ConfirmDialog>
       </div>
     </div>
-
     <FloatingButton icon="+" @click="openNewNotificationDialog" />
   </MenuLayout>
 </template>

@@ -1,351 +1,123 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { InputText, Button, useToast, useConfirm, ConfirmDialog } from "primevue";
-import axios from 'axios';
-import MenuLayout from '@/components/MenuLayout.vue';
-import { useAuth } from '@/composables/auth';
+import { ref } from 'vue'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogAction,
+  AlertDialogCancel
+} from '@/components/ui/alert-dialog'
+import axios from 'axios'
+import { toast } from 'vue-sonner'
+import { useAuth } from '@/composables/auth'
 
-const toast = useToast();
-const confirm = useConfirm();
+const { email } = useAuth()
 
-const { email } = useAuth();
+const pin = ref('')
+const showForm = ref(false)
+const isRequesting = ref(false)
+const isResetting = ref(false)
+const form = ref({ newPassword: '', confirmPassword: '' })
 
-const pin = ref('');
-const form = ref({
-  newPassword: '',
-  confirmPassword: ''
-});
-const showPasswordForm = ref(false);
-const isSubmittingRequest = ref(false);
-const isSubmittingReset = ref(false);
-
-const requestAndShowPasswordForm = async () => {
-  isSubmittingRequest.value = true;
+const sendResetEmail = async () => {
+  isRequesting.value = true
   try {
-    await axios.post('auth/forgot-password', { email: email.value });
-
-    showPasswordForm.value = true;
-    pin.value = '';
-    form.value = { newPassword: '', confirmPassword: '' };
-    toast.add({
-      severity: 'success',
-      summary: 'Check Your Email',
-      detail: 'Password reset instructions (including a PIN) sent to your email. Enter the PIN below along with your new password.',
-      life: 5000
-    });
-  } catch (error: any) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'Failed to send reset instructions',
-      life: 3000
-    });
+    await axios.post('auth/forgot-password', { email: email.value })
+    toast.success('Check your inbox for the PIN.')
+    showForm.value = true
+    pin.value = ''
+    form.value = { newPassword: '', confirmPassword: '' }
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Reset email failed.')
   } finally {
-    isSubmittingRequest.value = false;
+    isRequesting.value = false
   }
-};
+}
 
-const confirmPasswordResetRequest = (event: Event) => {
-  confirm.require({
-    target: event.currentTarget as HTMLElement,
-    message: 'Are you sure? This will send password reset instructions and a PIN to your email.',
-    header: 'Confirm Request',
-    icon: 'pi pi-envelope',
-    acceptClass: 'p-button-primary',
-    rejectClass: 'p-button-text',
-    acceptLabel: 'Yes, Send Instructions',
-    rejectLabel: 'Cancel',
-    accept: requestAndShowPasswordForm,
-    reject: () => { }
-  });
-};
-
-
-const handlePasswordReset = async () => {
+const resetPassword = async () => {
   if (!pin.value || pin.value.length !== 8) {
-    toast.add({ severity: 'warn', summary: 'Validation Error', detail: 'Please enter the 8-character PIN from your email.', life: 3000 });
-    return;
+    toast.warning('PIN must be 8 characters.')
+    return
   }
   if (form.value.newPassword !== form.value.confirmPassword) {
-    toast.add({ severity: 'warn', summary: 'Validation Error', detail: 'Passwords do not match', life: 3000 });
-    return;
+    toast.warning('Passwords do not match.')
+    return
   }
-  if (form.value.newPassword.length < 8) {
-    toast.add({ severity: 'warn', summary: 'Validation Error', detail: 'Password must be at least 8 characters', life: 3000 });
-    return;
-  }
-
-  isSubmittingReset.value = true;
+  isResetting.value = true
   try {
     await axios.post('auth/reset-password', {
       email: email.value,
       pin: pin.value,
       password: form.value.newPassword
-    });
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Password reset successfully!',
-      life: 4000
-    });
-
-    pin.value = '';
-    form.value = { newPassword: '', confirmPassword: '' };
-    showPasswordForm.value = false;
-
-  } catch (error: any) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'Failed to reset password. Please check your PIN or try again.',
-      life: 4000
-    });
+    })
+    toast.success('Password has been reset.')
+    showForm.value = false
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Reset failed.')
   } finally {
-    isSubmittingReset.value = false;
+    isResetting.value = false
   }
-};
+}
 </script>
 
 <template>
-  <MenuLayout>
-    <div class="p-4 md:p-6 space-y-8">
+  <div class="p-6 max-w-lg mx-auto space-y-10 animate-fadeInUp">
+    <!-- Account Section -->
+    <section>
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Account Credentials</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">
+        Request password reset to be sent to <strong class="text-blue-600 dark:text-blue-400">{{ email }}</strong>
+      </p>
 
-      <!-- Theme Settings Section -->
-      <section>
-        <h2 class="text-xl font-semibold mb-4 text-black">Theme Settings</h2>
-        <div class="bg-white p-6 rounded-lg shadow max-w-md">
-        </div>
-      </section>
+      <AlertDialog>
+        <AlertDialogTrigger as-child>
+          <Button :disabled="isRequesting || showForm" class="mt-4 w-full">Send Reset Instructions</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <h3 class="text-lg font-medium">Are you sure?</h3>
+          <p>This will send reset instructions to your email.</p>
+          <div class="flex justify-end gap-2 mt-4">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction @click="sendResetEmail">Send</AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
 
-      <!-- Account Credentials Section -->
-      <section>
-        <h2 class="text-xl font-semibold mb-4 text-black">Account Credentials</h2>
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow max-w-md space-y-4">
-          <p class="text-sm text-black">
-            Request password reset instructions (including a PIN) to be sent to your registered email address: <strong
-              class="text-black break-all">{{ email }}</strong>.
-          </p>
-          <ConfirmDialog />
-          <Button type="button" @click="confirmPasswordResetRequest" label=" Send Reset Instructions" icon="pi pi-send"
-            :loading="isSubmittingRequest" :disabled="showPasswordForm"
-            class="w-full md:w-auto bg-primary hover:bg-primary/80 p-2 text-white rounded-lg" unstyled />
-          <p v-if="showPasswordForm" class="text-sm text-primary hover:text-primary/80 font-medium">
-            Instructions sent! Please check your email and fill out the form below.
-          </p>
-        </div>
-      </section>
-
-
-      <!-- Reset Password Form  -->
-      <section v-if="showPasswordForm" class="password-reset-section animate-fade-in">
-        <h2 class="text-xl font-semibold mb-4 text-black">Reset Your Password</h2>
-        <div class="modal-container max-w-md p-6 sm:p-8">
-
-          <form @submit.prevent="handlePasswordReset" class="space-y-5">
-            <div>
-              <label for="reset-pin" class="label-themed mb-2">Verification PIN</label>
-              <span class="p-input-icon-left w-full">
-                <i class="pi pi-key" />
-                <InputText id="reset-pin" v-model="pin" type="text" inputmode="text" pattern="[0-9a-zA-Z]*"
-                  maxlength="8" required placeholder="Enter 8-character PIN from email"
-                  class="input-themed w-full !text-lg tracking-widest" autocomplete="one-time-code" />
-              </span>
-            </div>
-            <div>
-              <label for="new-password" class="label-themed mb-2">New Password</label>
-              <span class="p-input-icon-left w-full">
-                <i class="pi pi-lock" />
-                <InputText id="new-password" v-model="form.newPassword" type="password" placeholder="Enter new password"
-                  required class="input-themed w-full" />
-              </span>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 8 characters</p>
-            </div>
-
-            <div>
-              <label for="confirm-password" class="label-themed mb-2">Confirm Password</label>
-              <span class="p-input-icon-left w-full">
-                <i class="pi pi-lock-open" />
-                <InputText id="confirm-password" v-model="form.confirmPassword" type="password"
-                  placeholder="Confirm new password" required class="input-themed w-full" />
-              </span>
-            </div>
-
-            <Button type="submit" label="Reset Password & Verify PIN" :loading="isSubmittingReset"
-              :disabled="!pin || pin.length < 8 || !form.newPassword || form.newPassword.length < 8 || !form.confirmPassword || form.newPassword !== form.confirmPassword"
-              class="w-full py-3 button-primary-themed" />
-          </form>
-          <Button label="Cancel" icon="pi pi-times"
-            @click="showPasswordForm = false; pin = ''; form = { newPassword: '', confirmPassword: '' };"
-            class="p-button-text p-button-sm mt-4 w-full" />
-        </div>
-      </section>
-    </div>
-  </MenuLayout>
+    <!-- Reset Form Section -->
+    <section v-if="showForm" class="transition-all duration-300">
+      <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-4">Reset Your Password</h2>
+      <div class="space-y-4">
+        <Input v-model="pin" placeholder="Enter PIN" class="tracking-widest text-lg" />
+        <Input v-model="form.newPassword" type="password" placeholder="New Password" />
+        <Input v-model="form.confirmPassword" type="password" placeholder="Confirm Password" />
+        <Button
+            @click="resetPassword"
+            :disabled="isResetting || !pin || !form.newPassword || form.newPassword !== form.confirmPassword"
+            class="w-full"
+        >
+          Reset Password
+        </Button>
+      </div>
+    </section>
+  </div>
 </template>
 
-
 <style scoped>
-:deep(.input-themed.p-inputtext) {
-  background-color: var(--surface-section);
-  border: 1px solid var(--surface-border);
-  color: var(--text-color);
-  border-radius: 0.5rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  transition: background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.2s;
-}
-
-:deep(.p-input-icon-left > .input-themed.p-inputtext) {
-  padding-left: 2.75rem;
-}
-
-:deep(.p-input-icon-left > i) {
-  color: var(--text-color-secondary);
-  left: 1rem;
-  top: 50%;
-  margin-top: -0.5rem;
-}
-
-:deep(.input-themed.p-inputtext:focus) {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color);
-}
-
-:deep(.input-themed.p-inputtext::placeholder) {
-  color: var(--text-color-secondary);
-  opacity: 0.7;
-}
-
-:deep(.button-primary-themed.p-button) {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--primary-color-text);
-  font-weight: 500;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
-}
-
-:deep(.button-primary-themed.p-button:hover:not(.p-disabled)) {
-  background-color: var(--primary-color-hover);
-  border-color: var(--primary-color-hover);
-}
-
-:deep(.button-primary-themed.p-button:focus) {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--primary-color);
-}
-
-:deep(.button-primary-themed.p-button:active:not(.p-disabled)) {
-  transform: scale(0.98);
-}
-
-:deep(.p-button-outlined) {
-  color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
-}
-
-:deep(.p-button-outlined:hover) {
-  background: rgba(var(--primary-color), 0.05) !important;
-  /* Needs tweaking if using hex */
-}
-
-.link-themed {
-  color: var(--link-color);
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.link-themed:hover {
-  color: var(--link-color-hover);
-  text-decoration: underline;
-}
-
-.link-themed:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  text-decoration: none;
-}
-
-.link-themed:disabled:hover {
-  color: var(--link-color);
-}
-
-/* Modal-like container for the password form */
-.modal-container {
-  background-color: var(--surface-card);
-  border: 1px solid var(--surface-border);
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  transition: background-color 0.3s, border-color 0.3s;
-}
-
-html.dark .modal-container {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.15);
-}
-
-
-:deep(.p-confirm-popup) {
-  background-color: var(--surface-card);
-  color: var(--text-color);
-  border: 1px solid var(--surface-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-}
-
-html.dark :deep(.p-confirm-popup) {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-:deep(.p-confirm-popup .p-confirm-popup-content) {
-  padding: 1.5rem;
-}
-
-:deep(.p-confirm-popup .p-confirm-popup-icon) {
-  color: var(--text-color-secondary);
-  margin-right: 0.75rem;
-}
-
-:deep(.p-confirm-popup .p-confirm-popup-message) {
-  line-height: 1.6;
-  margin-left: 0.5rem;
-}
-
-:deep(.p-confirm-popup .p-confirm-popup-footer) {
-  padding: 0 1.5rem 1.5rem 1.5rem;
-  text-align: right;
-  border-top: none;
-}
-
-:deep(.p-confirm-popup .p-confirm-popup-footer button) {
-  margin-left: 0.5rem;
-}
-
-:deep(.p-confirm-popup .p-button-text) {
-  color: var(--text-color-secondary);
-}
-
-:deep(.p-confirm-popup .p-button-text:hover) {
-  background-color: var(--surface-hover) !important;
-  color: var(--text-color) !important;
-}
-
-@keyframes fade-in {
+@keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.4s ease-out forwards;
+.animate-fadeInUp {
+  animation: fadeInUp 0.5s ease-out both;
 }
 </style>

@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import axios from 'axios';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import { useToast } from 'primevue/usetoast';
+import { toast } from 'vue-sonner';
 import { memoryStorage } from '@/storage';
 import router from '@/router';
 import { RouterLink } from 'vue-router';
 import type { Pricing } from '@/types';
 
-const toast = useToast();
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+
 const pricing = ref<Pricing[]>([]);
 const loading = ref<boolean>(true);
 const activeFeature = ref<number>(0);
@@ -43,7 +46,7 @@ onMounted(async () => {
     }));
   } catch (error) {
     console.error("Failed to load pricing data:", error);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load pricing data', life: 3000 });
+    toast.error("Failed to load pricing data");
   } finally {
     loading.value = false;
     if (featureInterval) clearInterval(featureInterval);
@@ -94,6 +97,15 @@ const handleSignIn = async () => {
     await router.push('/sign-in');
   }
 }
+
+const getBadgeVariant = (type: string) => {
+  switch (type) {
+    case 'DAILY': return 'default';
+    case 'MONTHLY': return 'secondary';
+    case 'RESERVED': return 'outline';
+    default: return 'default';
+  }
+}
 </script>
 
 <template>
@@ -103,21 +115,20 @@ const handleSignIn = async () => {
       <div class="max-w-6xl mx-auto px-6 py-4">
         <div class="flex justify-between items-center">
           <RouterLink to="/" class="group flex items-center space-x-3">
-            <div class="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-200">
+            <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-200 shadow-lg">
               <span class="text-white font-medium text-sm">P</span>
             </div>
             <span class="text-xl font-medium text-gray-900">Parking Hub</span>
           </RouterLink>
 
           <div class="flex items-center space-x-4">
-            <button @click="handleSignIn()"
-                    class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200">
+            <Button variant="ghost" @click="handleSignIn()" class="hover:text-blue-600 hover:bg-blue-50">
               Sign In
-            </button>
+            </Button>
             <RouterLink to="/sign-up">
-              <button class="px-6 py-2 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors duration-200">
+              <Button class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg">
                 Get Started
-              </button>
+              </Button>
             </RouterLink>
           </div>
         </div>
@@ -127,13 +138,13 @@ const handleSignIn = async () => {
     <!-- Hero Section -->
     <header id="about" class="max-w-4xl mx-auto px-6 py-24 text-center">
       <div class="space-y-8">
-        <div class="inline-flex items-center px-4 py-2 bg-gray-50 rounded-full">
-          <span class="text-sm text-gray-600 font-medium">Simple. Smart. Secure.</span>
-        </div>
+        <Badge variant="secondary" class="px-4 py-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+          Simple. Smart. Secure.
+        </Badge>
 
         <h1 class="text-5xl md:text-6xl font-light text-gray-900 leading-tight">
           Parking
-          <span class="font-medium">Simplified</span>
+          <span class="font-medium bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">Simplified</span>
         </h1>
 
         <p class="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
@@ -142,12 +153,12 @@ const handleSignIn = async () => {
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-          <button class="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors duration-200">
+          <Button size="lg" class="px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg">
             Start Parking
-          </button>
-          <button class="px-8 py-3 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200">
+          </Button>
+          <Button variant="ghost" size="lg" class="px-8 hover:text-blue-600 hover:bg-blue-50">
             Learn More
-          </button>
+          </Button>
         </div>
       </div>
     </header>
@@ -161,29 +172,39 @@ const handleSignIn = async () => {
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-        <div v-for="(feature, index) in features" :key="index"
-             @mouseenter="activeFeature = index"
-             class="text-center group cursor-pointer"
-             :class="{ 'opacity-100': activeFeature === index, 'opacity-70 hover:opacity-100': activeFeature !== index }">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <Card
+            v-for="(feature, index) in features"
+            :key="index"
+            @mouseenter="activeFeature = index"
+            class="text-center group cursor-pointer border-none shadow-none hover:shadow-lg transition-all duration-300 hover:border-blue-100"
+            :class="{ 
+              'opacity-100 scale-105 shadow-xl border-blue-200 bg-gradient-to-b from-blue-50/50 to-white': activeFeature === index, 
+              'opacity-70 hover:opacity-100': activeFeature !== index 
+            }">
 
-          <div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">
-            {{ feature.icon }}
-          </div>
+          <CardHeader class="pb-4">
+            <div class="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300"
+                 :class="{ 'transform scale-110': activeFeature === index }">
+              {{ feature.icon }}
+            </div>
+            <CardTitle class="text-xl font-medium"
+                       :class="activeFeature === index ? 'text-blue-700' : 'text-gray-900'">
+              {{ feature.title }}
+            </CardTitle>
+          </CardHeader>
 
-          <h3 class="text-xl font-medium text-gray-900 mb-3">
-            {{ feature.title }}
-          </h3>
-
-          <p class="text-gray-600 leading-relaxed">
-            {{ feature.description }}
-          </p>
-        </div>
+          <CardContent>
+            <CardDescription class="text-gray-600 leading-relaxed">
+              {{ feature.description }}
+            </CardDescription>
+          </CardContent>
+        </Card>
       </div>
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing" class="bg-gray-50 py-20">
+    <section id="pricing" class="bg-gradient-to-b from-gray-50 to-blue-50/30 py-20">
       <div class="max-w-6xl mx-auto px-6">
         <div class="text-center mb-16">
           <h2 class="text-3xl font-light text-gray-900 mb-4">Simple Pricing</h2>
@@ -192,53 +213,77 @@ const handleSignIn = async () => {
           </p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <DataTable :value="sortedPricing" :loading="loading" class="minimal-table" :row-hover="false">
-            <Column field="type" header="Plan" headerClass="minimal-header" bodyClass="minimal-cell">
-              <template #body="{ data }">
-                <div class="flex items-center">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                        :class="{
-                      'bg-green-50 text-green-700': data.type === 'DAILY',
-                      'bg-blue-50 text-blue-700': data.type === 'MONTHLY',
-                      'bg-purple-50 text-purple-700': data.type === 'RESERVED'
-                    }">
-                    {{ data.type }}
-                  </span>
-                </div>
-              </template>
-            </Column>
+        <Card class="overflow-hidden border-blue-100 shadow-xl">
+          <CardContent class="p-0">
+            <Table v-if="!loading">
+              <TableHeader class="bg-gradient-to-r from-blue-50 to-blue-100/50">
+                <TableRow>
+                  <TableHead class="font-medium text-blue-800">Plan</TableHead>
+                  <TableHead class="font-medium text-blue-800">Vehicle</TableHead>
+                  <TableHead class="text-right font-medium text-blue-800">Price</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="item in sortedPricing" :key="`${item.type}-${item.vehicleType}`"
+                          class="hover:bg-blue-50/30 transition-colors duration-200">
+                  <TableCell>
+                    <Badge :variant="getBadgeVariant(item.type)"
+                           :class="{
+                             'bg-blue-100 text-blue-700 hover:bg-blue-200': item.type === 'DAILY',
+                             'bg-blue-50 text-blue-600 hover:bg-blue-100': item.type === 'MONTHLY',
+                             'border-blue-300 text-blue-700 hover:bg-blue-50': item.type === 'RESERVED'
+                           }">
+                      {{ item.type }}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div class="flex items-center space-x-3">
+                      <span class="text-2xl">
+                        {{ item.vehicleType === 'MOTORBIKE' ? '🏍️' : '🚗' }}
+                      </span>
+                      <span class="text-gray-900 font-medium capitalize">
+                        {{ item.vehicleType.toLowerCase() }}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell class="text-right">
+                    <div>
+                      <div class="text-2xl font-light text-blue-700">
+                        {{ new Intl.NumberFormat('vi-VN').format(item.price) }}
+                        <span class="text-sm text-gray-500 font-normal">VND</span>
+                      </div>
+                      <div class="text-sm text-blue-600/70">
+                        <span v-if="item.type === 'DAILY'">per hour</span>
+                        <span v-else-if="item.type === 'MONTHLY'">per month</span>
+                        <span v-else-if="item.type === 'RESERVED'">per month</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
 
-            <Column field="vehicleType" header="Vehicle" headerClass="minimal-header" bodyClass="minimal-cell">
-              <template #body="{ data }">
+            <!-- Loading Skeletons -->
+            <div v-else class="p-6 space-y-4">
+              <div class="flex justify-between items-center border-b pb-2">
+                <Skeleton class="h-4 w-16" />
+                <Skeleton class="h-4 w-20" />
+                <Skeleton class="h-4 w-24" />
+              </div>
+              <div v-for="i in 6" :key="i" class="flex justify-between items-center py-3">
+                <Skeleton class="h-6 w-20" />
                 <div class="flex items-center space-x-3">
-                  <span class="text-2xl">
-                    {{ data.vehicleType === 'MOTORBIKE' ? '🏍️' : '🚗' }}
-                  </span>
-                  <span class="text-gray-900 font-medium capitalize">
-                    {{ data.vehicleType.toLowerCase() }}
-                  </span>
+                  <Skeleton class="h-8 w-8 rounded" />
+                  <Skeleton class="h-4 w-16" />
                 </div>
-              </template>
-            </Column>
-
-            <Column field="price" header="Price" headerClass="minimal-header" bodyClass="minimal-cell">
-              <template #body="{ data }">
                 <div class="text-right">
-                  <div class="text-2xl font-light text-gray-900">
-                    {{ new Intl.NumberFormat('vi-VN').format(data.price) }}
-                    <span class="text-sm text-gray-500 font-normal">VND</span>
-                  </div>
-                  <div class="text-sm text-gray-500">
-                    <span v-if="data.type === 'DAILY'">per hour</span>
-                    <span v-else-if="data.type === 'MONTHLY'">per month</span>
-                    <span v-else-if="data.type === 'RESERVED'">per month</span>
-                  </div>
+                  <Skeleton class="h-6 w-24 mb-1" />
+                  <Skeleton class="h-3 w-16" />
                 </div>
-              </template>
-            </Column>
-          </DataTable>
-        </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
 
@@ -247,16 +292,16 @@ const handleSignIn = async () => {
       <div class="max-w-6xl mx-auto px-6">
         <div class="flex flex-col md:flex-row justify-between items-center">
           <div class="flex items-center space-x-3 mb-4 md:mb-0">
-            <div class="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
+            <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg">
               <span class="text-white font-medium text-sm">P</span>
             </div>
             <span class="text-lg font-medium text-gray-900">Parking Hub</span>
           </div>
 
           <div class="flex space-x-8 mb-4 md:mb-0">
-            <a href="#about" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">About</a>
-            <a href="#features" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">Features</a>
-            <a href="#pricing" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">Pricing</a>
+            <a href="#about" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">About</a>
+            <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">Features</a>
+            <a href="#pricing" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">Pricing</a>
           </div>
 
           <p class="text-sm text-gray-500">
@@ -275,62 +320,12 @@ const handleSignIn = async () => {
   font-family: 'Inter', sans-serif;
 }
 
-/* Minimal Table Styles */
-:deep(.minimal-table) {
-  background: transparent;
-  border: none;
-}
-
-:deep(.minimal-table .p-datatable-thead > tr > th.minimal-header) {
-  background: #f9fafb;
-  color: #6b7280;
-  border: none;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1.5rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-  text-align: left;
-}
-
-:deep(.minimal-table .p-datatable-tbody > tr) {
-  background: white;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s ease;
-}
-
-:deep(.minimal-table .p-datatable-tbody > tr:hover) {
-  background: #f9fafb;
-}
-
-:deep(.minimal-table .p-datatable-tbody > tr > td.minimal-cell) {
-  border: none;
-  padding: 1.5rem;
-  color: #111827;
-}
-
-/* Loading States */
-:deep(.p-datatable .p-datatable-loading-overlay) {
-  background: rgba(255, 255, 255, 0.9);
-}
-
-:deep(.p-datatable .p-datatable-loading-icon) {
-  color: #6b7280;
-}
-
-:deep(.p-datatable .p-datatable-emptymessage td) {
-  color: #6b7280;
-  text-align: center;
-  padding: 3rem;
-}
-
-/* Smooth transitions */
 .transition-colors {
   transition-property: color, background-color, border-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
 
-/* Subtle animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -338,5 +333,10 @@ const handleSignIn = async () => {
 
 .group:hover .group-hover\:scale-110 {
   transform: scale(1.1);
+}
+
+.bg-clip-text {
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 </style>

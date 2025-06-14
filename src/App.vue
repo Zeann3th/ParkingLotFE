@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Toast } from 'primevue';
+import {Toaster} from "vue-sonner";
 </script>
 
 <template>
-  <Toast position="bottom-right" />
+  <Toaster position="bottom-right" />
   <RouterView />
 </template>

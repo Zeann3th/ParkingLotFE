@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Dialog, Button, useToast, useConfirm, ConfirmDialog } from 'primevue';
-import MenuLayout from '@/components/MenuLayout.vue';
-import { type Vehicle, type CreateVehicle } from '@/types';
+import { toast } from 'vue-sonner';
+import MenuLayout from '@/components/Menu/MenuLayout.vue';
+import { type CreateVehicle, type Vehicle } from '@/types';
 import { vehicleService } from '@/services/vehicle.service';
-import Skeleton from '@/components/Skeleton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import FloatingButton from '@/components/FloatingButton.vue';
 import { useState } from '@/composables/state';
 import Title from '@/components/Title.vue';
 import InputText from '@/components/InputText.vue';
 import { useAuth } from '@/composables/auth';
+import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Pencil, X } from 'lucide-vue-next';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Vehicle>({ limit: 20 });
 const isEditing = ref(false);
@@ -23,17 +27,9 @@ const createVehiclePayload = ref<CreateVehicle>({
   type: '',
 });
 
-const toast = useToast();
-const confirm = useConfirm();
-
 const { role } = useAuth();
-const isPrivilledged = computed(() => {
-  return role.value === 'ADMIN' || role.value === 'SECURITY';
-});
-
-const isAdmin = computed(() => {
-  return role.value === 'ADMIN';
-});
+const isPrivileged = computed(() => role.value === 'ADMIN' || role.value === 'SECURITY');
+const isAdmin = computed(() => role.value === 'ADMIN');
 
 const getAllVehicles = async () => {
   isLoading.value = true;
@@ -43,7 +39,7 @@ const getAllVehicles = async () => {
     maxPage.value = response.maxPage;
     isMutated.value = false;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error Loading Vehicles', detail: error as string, life: 3000 });
+    toast.error('Error loading vehicles');
   } finally {
     isLoading.value = false;
   }
@@ -51,20 +47,17 @@ const getAllVehicles = async () => {
 
 const searchVehicles = async (query: string) => {
   if (!query.trim()) {
-    // If search query is empty, load all vehicles
     page.value = 1;
     await getAllVehicles();
     return;
   }
-
   isSearching.value = true;
   try {
-    const response = await vehicleService.search(query.trim());
-    itemList.value = response.data || response; // Handle different response formats
-    maxPage.value = 1; // Search results typically don't have pagination
+    itemList.value = await vehicleService.search(query.trim());
+    maxPage.value = 1;
     page.value = 1;
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Search Failed', detail: error as string, life: 3000 });
+    toast.error('Search failed');
   } finally {
     isSearching.value = false;
   }
@@ -76,23 +69,22 @@ const getVehicleDetail = async (id: number) => {
   try {
     selectedItem.value = await vehicleService.getById(id);
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error Fetching Details', detail: error as string, life: 3000 });
+    toast.error('Error fetching details');
     closeDialog("view");
   }
 };
 
 const createVehicle = async () => {
   if (!createVehiclePayload.value.plate || !createVehiclePayload.value.type) {
-    toast.add({ severity: 'warn', summary: 'Missing Information', detail: 'Please fill in both Plate and Type.', life: 3000 });
+    toast.warning('Please fill in both Plate and Type.');
     return;
   }
   isMutated.value = true;
   try {
     await vehicleService.create(createVehiclePayload.value);
-    toast.add({ severity: 'success', summary: 'Vehicle Created', detail: 'New vehicle added successfully.', life: 3000 });
+    toast.success('New vehicle added successfully.');
     closeDialogAndResetCreateForm();
     page.value = 1;
-    // Refresh based on current search state
     if (searchQuery.value.trim()) {
       await searchVehicles(searchQuery.value);
     } else {
@@ -100,23 +92,22 @@ const createVehicle = async () => {
     }
   } catch (error) {
     isMutated.value = false;
-    toast.add({ severity: 'error', summary: 'Creation Failed', detail: error as string, life: 3000 });
+    toast.error('Creation failed');
   }
 };
 
 const updateVehicle = async () => {
   if (!selectedItem.value) return;
   if (!selectedItem.value.plate || !selectedItem.value.type) {
-    toast.add({ severity: 'warn', summary: 'Missing Information', detail: 'Plate and Type cannot be empty.', life: 3000 });
+    toast.warning('Plate and Type cannot be empty.');
     return;
   }
   isMutated.value = true;
   try {
     await vehicleService.update(selectedItem.value.id, selectedItem.value.plate);
-    toast.add({ severity: 'success', summary: 'Vehicle Updated', detail: 'Vehicle details saved.', life: 3000 });
+    toast.success('Vehicle details saved.');
     isEditing.value = false;
     closeDialog("view");
-    // Refresh based on current search state
     if (searchQuery.value.trim()) {
       await searchVehicles(searchQuery.value);
     } else {
@@ -124,52 +115,37 @@ const updateVehicle = async () => {
     }
   } catch (error) {
     isMutated.value = false;
-    toast.add({ severity: 'error', summary: 'Update Failed', detail: error as string, life: 3000 });
+    toast.error('Update failed');
   }
 };
 
-const deleteVehicle = (id: number | undefined) => {
+const deleteVehicle = async (id: number | undefined) => {
   if (!id) return;
-  confirm.require({
-    message: 'Are you sure you want to delete this vehicle?',
-    header: 'Delete Confirmation',
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
-    accept: async () => {
-      isMutated.value = true;
-      try {
-        await vehicleService.delete(id);
-        toast.add({ severity: 'info', summary: 'Vehicle Deleted', detail: 'The vehicle has been removed.', life: 3000 });
-        closeDialog("view");
-        page.value = 1;
-        // Refresh based on current search state
-        if (searchQuery.value.trim()) {
-          await searchVehicles(searchQuery.value);
-        } else {
-          await getAllVehicles();
-        }
-      } catch (error) {
-        isMutated.value = false;
-        toast.add({ severity: 'error', summary: 'Deletion Failed', detail: error as string, life: 3000, });
-      }
-    },
-    reject: () => {
+  if (!window.confirm('Are you sure you want to delete this vehicle?')) return;
+  isMutated.value = true;
+  try {
+    await vehicleService.delete(id);
+    toast.success('Vehicle deleted');
+    if (searchQuery.value.trim()) {
+      await searchVehicles(searchQuery.value);
+    } else {
+      await getAllVehicles();
     }
-  });
+    closeDialog("view");
+  } catch (error) {
+    isMutated.value = false;
+    toast.error('Delete failed');
+  }
 };
 
 const handleScroll = () => {
   const container = scrollContainer.value;
   if (!container || isLoading.value || page.value >= maxPage.value || searchQuery.value.trim()) return;
-
   const bottomOffset = 150;
   const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < bottomOffset;
-
   if (isNearBottom) {
-    console.log("Reached bottom, loading more vehicles...");
     page.value += 1;
     isLoading.value = true;
-
     vehicleService.getAll(page.value, limit.value, { cache: !isMutated.value })
         .then((response) => {
           if (response.data && response.data.length > 0) {
@@ -177,10 +153,9 @@ const handleScroll = () => {
           }
           maxPage.value = response.maxPage;
         })
-        .catch((error) => {
-          console.error("Failed to load more vehicles:", error);
-          toast.add({ severity: 'error', summary: 'Error Loading More', detail: 'Failed to load more vehicles.', life: 3000 });
+        .catch(() => {
           page.value -= 1;
+          toast.error('Failed to load more vehicles');
         })
         .finally(() => {
           isLoading.value = false;
@@ -200,12 +175,10 @@ function debounce(func: Function, wait: number) {
   };
 }
 
-// Debounced search function
 const debouncedSearch = debounce((query: string) => {
   searchVehicles(query);
 }, 300);
 
-// Watch for search query changes
 watch(searchQuery, (newQuery) => {
   debouncedSearch(newQuery);
 });
@@ -226,10 +199,9 @@ onMounted(() => {
   getAllVehicles();
   const debouncedScrollHandler = debounce(handleScroll, 200);
   scrollContainer.value?.addEventListener('scroll', debouncedScrollHandler);
-  const cleanupScroll = () => {
+  onBeforeUnmount(() => {
     scrollContainer.value?.removeEventListener('scroll', debouncedScrollHandler);
-  };
-  onBeforeUnmount(cleanupScroll);
+  });
 });
 
 const closeDialogAndResetCreateForm = () => {
@@ -240,234 +212,152 @@ const closeDialogAndResetCreateForm = () => {
 const closeViewDialog = () => {
   closeDialog('view');
   isEditing.value = false;
-}
+};
 
+const getVehicleTypeIcon = (type: string | undefined) => {
+  if (!type) return '❓';
+  switch (type.toUpperCase()) {
+    case 'CAR': return '🚗';
+    case 'MOTORBIKE': return '🏍️';
+    default: return '❓';
+  }
+};
 </script>
 
 <template>
   <MenuLayout>
     <div ref="scrollContainer"
-         class="h-screen overflow-y-auto !bg-gray-50 dark:!bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+         class="min-h-screen bg-white p-4 sm:p-6 lg:p-8 transition-colors duration-300 overflow-y-auto">
       <div class="max-w-7xl mx-auto">
-        <Title name="Vehicles" subtext="Manage registered vehicles" @click="refreshData"
-               class="mb-6 md:mb-8" />
+        <Title name="Vehicles" @click="refreshData" class="mb-6" />
 
         <!-- Search Bar -->
-        <div class="mb-6 relative">
-          <div class="relative max-w-md">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="pi pi-search text-gray-400 dark:text-gray-500 text-sm"></i>
-            </div>
-            <InputText
-                input-id="search-vehicle"
-                v-model="searchQuery"
-                placeholder="Search by license plate..."
-                class="!pl-10 !pr-10 w-full"
-            />
-            <div v-if="searchQuery || isSearching" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <button
-                  v-if="searchQuery && !isSearching"
-                  @click="clearSearch"
-                  class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
-                  aria-label="Clear search"
-              >
-                <i class="pi pi-times text-sm"></i>
-              </button>
-              <div v-if="isSearching" class="animate-spin">
-                <i class="pi pi-spinner text-gray-400 text-sm"></i>
-              </div>
-            </div>
-          </div>
-          <div v-if="searchQuery" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {{ isSearching ? 'Searching...' : `Search results for "${searchQuery}"` }}
-          </div>
+        <div class="mb-6 flex items-center gap-3">
+          <InputText v-model="searchQuery" inputId="vehicleSearch" placeholder="Search by plate or type..." class="w-full" />
+          <Button variant="ghost" @click="clearSearch" v-if="searchQuery" size="icon" aria-label="Clear search">
+            <X class="w-4 h-4" />
+          </Button>
         </div>
 
-        <!-- Skeleton Loading -->
-        <Skeleton v-if="(isLoading && page === 1) || isSearching" type="grid-card" :count="limit" />
+        <!-- Loading Skeletons -->
+        <div v-if="isLoading && itemList.length === 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <Skeleton v-for="i in limit" :key="i" class="h-32 w-full rounded-lg" />
+        </div>
 
-        <!-- Vehicles Grid -->
+        <!-- Vehicle List -->
         <div v-else-if="itemList.length > 0"
-             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
-
-          <!-- === Vehicle Card Start === -->
-          <div v-for="vehicle in itemList" :key="vehicle.id" class="
-              card relative
-              !bg-white dark:!bg-gray-800
-              rounded-lg shadow-sm hover:shadow-md
-              border border-gray-200 dark:border-gray-700
-              flex flex-col
-              transition-all duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer
-            " @click="getVehicleDetail(vehicle.id)" role="button" tabindex="0">
-
-            <div class="p-5 flex-grow">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 truncate"
-                  :title="vehicle.plate">
+             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div v-for="vehicle in itemList" :key="vehicle.id"
+               class="bg-white rounded-lg shadow-md p-4 cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 border border-blue-100 flex flex-col"
+               @click="getVehicleDetail(vehicle.id)" role="button"
+               :aria-label="`View details for vehicle ${vehicle.plate}`">
+            <div class="flex justify-between items-start mb-3 gap-2">
+              <h2 class="font-semibold text-black line-clamp-1 break-all flex-1">
+                <span class="mr-2 text-xl">{{ getVehicleTypeIcon(vehicle.type) }}</span>
                 {{ vehicle.plate }}
-              </h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                {{ vehicle.type || 'N/A' }}
-              </p>
+              </h2>
             </div>
-
-            <div
-                class="border-t border-gray-200 dark:border-gray-700 mt-auto px-5 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-b-lg">
-              <p class="text-xs text-gray-500 dark:text-gray-400 text-right font-mono tracking-tight">
-                ID: {{ vehicle.id }}
-              </p>
+            <div class="text-sm text-gray-600 mb-3">
+              <Badge variant="secondary" class="bg-blue-50 text-blue-700 border-blue-200">
+                {{ vehicle.type }}
+              </Badge>
+            </div>
+            <div class="text-xs text-gray-400 mt-auto pt-2 border-t border-gray-100">
+              ID: {{ vehicle.id }}
             </div>
           </div>
-        </div>
-
-        <div v-if="isLoading && page > 1" class="text-center py-6 text-gray-500 dark:text-gray-400">
-          Loading more vehicles...
+          <div v-if="isLoading && itemList.length > 0" class="col-span-full text-center py-4">
+            <Skeleton class="h-6 w-24 mx-auto" />
+            <span class="text-gray-500 ml-2">Loading more...</span>
+          </div>
         </div>
 
         <!-- Empty State -->
-        <EmptyMessage
-            v-else-if="!isLoading && !isSearching && itemList.length === 0"
-            :message="searchQuery ? `No vehicles found matching ${searchQuery}` : 'No vehicles found.'"
-        @refresh="refreshData"
-        class="mt-10"
-        />
+        <EmptyMessage v-else-if="!isLoading && itemList.length === 0" message="No Vehicles Found." @refresh="refreshData" />
 
         <!-- Vehicle Detail Dialog -->
-        <Dialog v-model:visible="dialogs.view" modal :closable="true" :showHeader="false"
-                class="!bg-white dark:!bg-gray-800 !text-black !rounded-xl !shadow-xl !border !border-gray-200 dark:!border-gray-700"
-                :style="{ width: '95%', maxWidth: '500px' }">
-          <!-- Custom Header -->
-          <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Vehicle Details</h2>
-            <Button icon="pi pi-times"
-                    class="w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:ring-2 focus:!ring-primary-500/50"
-                    @click="closeViewDialog" aria-label="Close dialog" unstyled />
-          </div>
-
-          <!-- Content Area -->
-          <div v-if="selectedItem" class="p-5 md:p-6 space-y-4">
-            <!-- ID (Read Only) -->
-            <div class="grid grid-cols-3 gap-x-4 items-center">
-              <label class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">ID</label>
-              <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ selectedItem.id
-                }}</span>
+        <Dialog v-model:open="dialogs.view">
+          <DialogContent class="max-w-md w-full p-0">
+            <div>
+              <div class="flex justify-between items-center p-5 border-b border-blue-100">
+                <h2 class="text-xl font-semibold text-gray-800">Vehicle Details</h2>
+              </div>
+              <div v-if="!selectedItem" class="p-6 text-center text-gray-500">
+                <Skeleton class="h-6 w-2/5 mb-4 mx-auto" />
+                <Skeleton class="h-4 w-full mb-2" />
+                <Skeleton class="h-16 w-full mb-4" />
+                <Skeleton class="h-5 w-3/5 mx-auto" />
+                <p>Loading Details...</p>
+              </div>
+              <div v-else class="p-5 md:p-6">
+                <div class="space-y-3">
+                  <div class="flex justify-between items-start py-1">
+                    <span class="text-sm font-medium text-gray-500 w-1/3">ID</span>
+                    <span class="text-sm text-gray-800 text-right break-all">{{ selectedItem.id }}</span>
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="text-sm font-medium text-gray-500 w-1/3">Plate</span>
+                    <span v-if="!isEditing" class="text-sm text-gray-800 text-right">{{ selectedItem.plate }}</span>
+                    <InputText v-else v-model="selectedItem.plate" inputId="updateVehiclePlate" />
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="text-sm font-medium text-gray-500 w-1/3">Type</span>
+                    <span v-if="!isEditing" class="text-sm text-gray-800 text-right">{{ selectedItem.type }}</span>
+                    <InputText v-else v-model="selectedItem.type" inputId="updateVehicleType" />
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="text-sm font-medium text-gray-500 w-1/3">Created At</span>
+                    <span class="text-sm text-gray-800 text-right">{{ new Date(selectedItem.createdAt).toLocaleString() }}</span>
+                  </div>
+                  <div class="flex justify-between items-start py-1">
+                    <span class="text-sm font-medium text-gray-500 w-1/3">Updated At</span>
+                    <span class="text-sm text-gray-800 text-right">{{ new Date(selectedItem.updatedAt).toLocaleString() }}</span>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-lg">
+                <template v-if="selectedItem">
+                  <Button v-if="isAdmin && !isEditing" variant="secondary" @click="isEditing = true">
+                    <Pencil class="w-4 h-4 mr-1" /> Edit
+                  </Button>
+                  <Button v-else-if="isAdmin && isEditing" variant="secondary" @click="updateVehicle">
+                    Save
+                  </Button>
+                  <Button v-if="isAdmin" variant="destructive" @click="deleteVehicle(selectedItem.id)">
+                    <Trash2 class="w-4 h-4 mr-1" /> Delete
+                  </Button>
+                  <Button variant="ghost" @click="closeViewDialog">
+                    Close
+                  </Button>
+                </template>
+              </DialogFooter>
             </div>
-            <!-- Plate -->
-            <div class="grid grid-cols-3 gap-x-4 items-center">
-              <label for="view-plate"
-                     class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Plate</label>
-              <span v-if="!isEditing" class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{
-                  selectedItem.plate }}</span>
-              <InputText v-else inputId="view-plate" v-model="selectedItem.plate"
-                         class="col-span-2 text-sm" />
-            </div>
-            <!-- Type -->
-            <div class="grid grid-cols-3 gap-x-4 items-center">
-              <label for="view-type"
-                     class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Type</label>
-              <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300 capitalize">{{
-                  selectedItem.type }}</span>
-            </div>
-            <!-- Created At -->
-            <div class="grid grid-cols-3 gap-x-4 items-center">
-                            <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Created
-                                At</span>
-              <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ new
-              Date(selectedItem.createdAt).toLocaleString() }}</span>
-            </div>
-            <!-- Updated At -->
-            <div class="grid grid-cols-3 gap-x-4 items-center">
-                            <span class="col-span-1 text-sm font-medium text-gray-500 dark:text-gray-400">Updated
-                                At</span>
-              <span class="col-span-2 text-sm text-gray-700 dark:text-gray-300">{{ new
-              Date(selectedItem.updatedAt).toLocaleString() }}</span>
-            </div>
-          </div>
-          <div v-else class="p-6 text-center text-gray-500 dark:text-gray-400">
-            Loading vehicle details...
-          </div>
-
-          <!-- Footer/Actions -->
-          <div
-              class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button v-if="isPrivilledged && !isEditing" label="Edit" icon="pi pi-pencil"
-                    class="p-button-sm p-button-outlined !border-accent !bg-accent !text-white hover:!bg-aceent/80 focus:!ring-2 focus:!ring-aceent"
-                    @click="isEditing = true" />
-            <Button v-if="isPrivilledged && isEditing" label="Save" icon="pi pi-save"
-                    class="p-button-sm !border-green-500 !bg-green-500 !text-white hover:!bg-green-700 focus:!ring-2 focus:!ring-green-500/50"
-                    @click="updateVehicle" />
-            <Button v-if="isAdmin" label="Delete" icon="pi pi-trash"
-                    class="p-button-sm p-button-danger !bg-red-500 !border-red-500 !text-white hover:!bg-red-700 focus:!ring-2 focus:!ring-red-500/50"
-                    @click="deleteVehicle(selectedItem?.id)" />
-            <Button label="Close"
-                    class="p-button-sm p-button-text !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-gray-500/50"
-                    @click="closeViewDialog" />
-          </div>
+          </DialogContent>
         </Dialog>
 
         <!-- Create Vehicle Dialog -->
-        <Dialog v-model:visible="dialogs.create" modal :closable="false" :showHeader="false" class="!bg-white dark:!bg-gray-800 !text-black !rounded-xl !shadow-xl !border !border-gray-200
-                    dark:!border-gray-700" :style="{ width: '95%', maxWidth: '500px' }">
-          <!-- Custom Header -->
-          <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Register New Vehicle</h2>
-            <Button icon="pi pi-times"
-                    class="w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:ring-2 focus:!ring-primary-500/50"
-                    @click="closeDialogAndResetCreateForm" aria-label="Close dialog" unstyled />
-          </div>
-
-          <div class="p-5 md:p-6 space-y-4">
-            <div>
-              <label for="create-plate"
-                     class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
-                License Plate <span class="text-red-500">*</span>
-              </label>
-              <InputText v-model="createVehiclePayload.plate" inputId="create-plate"
-                         placeholder="Enter license plate" />
+        <Dialog v-model:open="dialogs.create">
+          <DialogContent class="max-w-md w-full p-0">
+            <div class="flex justify-between items-center p-5 border-b border-blue-100">
+              <h2 class="text-xl font-semibold text-gray-800">Create New Vehicle</h2>
             </div>
-
-            <div>
-              <label for="create-type"
-                     class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
-                Vehicle Type <span class="text-red-500">*</span>
-              </label>
-              <select v-model="createVehiclePayload.type" inputId="create-type"
-                      class="!w-full p-inputtext-sm p-inputtext !bg-white !text-black border-white !rounded-md !shadow-sm !focus:ring-primary !focus:ring-primary/50"
-                      placeholder="Select vehicle type">
-                <option value="" disabled>Select vehicle type</option>
-                <option value="CAR">CAR</option>
-                <option value="MOTORBIKE">MOTORBIKE</option>
-              </select>
+            <div class="p-5 md:p-6 space-y-4">
+              <InputText v-model="createVehiclePayload.plate" inputId="createVehiclePlate" placeholder="Enter vehicle plate" />
+              <InputText v-model="createVehiclePayload.type" inputId="createVehicleType" placeholder="Enter vehicle type" />
             </div>
-          </div>
-
-          <!-- Footer/Actions -->
-          <div
-              class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
-            <Button v-if="isAdmin" label="Save" icon="pi pi-save" class="p-button-sm p-button-outlined
-                           !border-green-500 !bg-green-500 !text-white hover:!bg-green-700
-                           focus:!ring-2 focus:!ring-accent/50" @click="createVehicle" />
-            <Button label="Cancel"
-                    class="p-button-sm p-button-text !text-gray-700 dark:!text-gray-300 hover:!bg-gray-100 dark:hover:!bg-gray-700 focus:!ring-2 focus:!ring-gray-500/50"
-                    @click="closeDialogAndResetCreateForm" />
-          </div>
+            <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-xl">
+              <Button v-if="isPrivileged" variant="secondary" @click="createVehicle"
+                      :disabled="!createVehiclePayload.plate || !createVehiclePayload.type">
+                Save
+              </Button>
+              <Button variant="ghost" @click="closeDialogAndResetCreateForm">
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
-
       </div>
     </div>
-
-    <FloatingButton v-if="isPrivilledged" icon="+" @click="openDialog('create')" aria-label="Add new vehicle" />
-
+    <FloatingButton v-if="isPrivileged" icon="+" @click="openDialog('create')" aria-label="Add new vehicle" />
   </MenuLayout>
-  <ConfirmDialog></ConfirmDialog>
 </template>
-
-<style scoped>
-.card h3 {
-  overflow-wrap: break-word;
-}
-
-.p-button-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
-</style>
