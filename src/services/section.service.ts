@@ -68,5 +68,21 @@ export const sectionService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message ?? 'Failed to delete section');
     }
+  },
+  async report(id: number, opts?: {from: string | undefined, to: string | undefined}): Promise<{revenue: number}> {
+    try {
+      const response = await axios.post(`/sections/${id}/report`, {},{
+        headers: {
+          Authorization: `Bearer ${memoryStorage.getToken()}`,
+        },
+        params: {
+            ...(opts?.from ? { from: opts.from } : {}),
+            ...(opts?.to ? { to: opts.to } : {})
+        }
+      });
+      return response.data;
+    }  catch (error: any) {
+      throw new Error(error.response?.data?.message ?? 'Failed to report section');
+    }
   }
 };

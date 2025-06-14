@@ -18,6 +18,7 @@ import {useAuth} from '@/composables/auth';
 import {userService} from '@/services/user.service';
 import {vehicleService} from '@/services/vehicle.service';
 import debounce from 'lodash.debounce';
+import { Trash2, X, Save, CalendarDays, Pencil } from 'lucide-vue-next';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>({ limit: 20 });
 const isEditing = ref(false);
@@ -466,22 +467,28 @@ const closeCreateDialog = () => {
               <Button
                   v-if="(selectedItem?.type == 'MONTHLY' || selectedItem?.type == 'RESERVED') && selectedItem.status != 'CANCELED'"
                   variant="outline" size="sm" @click="cancelTicketSubscription">
+                <X class="w-5 h-5 mr-2"/>
                 Cancel
               </Button>
               <Button v-else-if="selectedItem?.status == 'CANCELED'" variant="outline" size="sm"
-                      @click="isRegistering = true">
+                      @click="isRegistering = true" class="bg-blue-600 hover:bg-blue-700 text-white">
+                <CalendarDays class="w-5 h-5 mr-2"/>
                 Reserve
               </Button>
-              <Button v-if="isPrivilledged && !isEditing" variant="outline" size="sm" @click="isEditing = true">
+              <Button v-if="isPrivilledged && !isEditing" variant="outline" size="sm" @click="isEditing = true" class="bg-blue-600 hover:bg-blue-700 text-white">
+                <Pencil class="w-5 h-5 mr-2"/>
                 Edit
               </Button>
-              <Button v-else-if="isPrivilledged && isEditing" variant="outline" size="sm" @click="updateTicket">
+              <Button v-else-if="isPrivilledged && isEditing" variant="outline" size="sm" @click="updateTicket" class="bg-green-600 hover:bg-green-700 text-white">
+                <Save class="w-5 h-5 mr-2"/>
                 Save
               </Button>
               <Button v-if="isAdmin" variant="destructive" size="sm" @click="confirmDeleteTicket(selectedItem?.id)">
+                <Trash2 class="w-5 h-5 mr-2"/>
                 Delete
               </Button>
               <Button variant="ghost" size="sm" @click="() => { closeDialog('view'); isEditing = false; vehicle = null; user = null }">
+                <X class="w-5 h-5 mr-2"/>
                 Close
               </Button>
             </div>
@@ -505,8 +512,14 @@ const closeCreateDialog = () => {
               </div>
             </div>
             <div class="flex justify-end gap-3">
-              <Button variant="outline" @click="registerTicket">Save</Button>
-              <Button variant="ghost" @click="isRegistering = false">Close</Button>
+              <Button variant="outline" @click="registerTicket" class="bg-green-600 hover:bg-green-700 text-white">
+                <Save class="w-5 h-5 mr-2"/>
+                Save
+              </Button>
+              <Button variant="ghost" @click="isRegistering = false">
+                <X class="w-5 h-5 mr-2"/>
+                Close
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -624,8 +637,14 @@ const closeCreateDialog = () => {
               </div>
             </div>
             <div class="flex justify-end gap-3">
-              <Button variant="outline" @click="createTicket">Save</Button>
-              <Button variant="ghost" @click="closeCreateDialog">Cancel</Button>
+              <Button variant="outline" @click="createTicket" class="bg-green-600 hover:bg-green-700 text-white">
+                <Save class="w-5 h-5 mr-2"/>
+                Save
+              </Button>
+              <Button variant="ghost" @click="closeCreateDialog">
+                <X class="w-5 h-5 mr-2"/>
+                Cancel
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -641,8 +660,14 @@ const closeCreateDialog = () => {
           Are you sure you want to delete this ticket? This action cannot be undone.
         </div>
         <div class="flex justify-end gap-3">
-          <Button variant="destructive" @click="deleteTicket">Delete</Button>
-          <Button variant="ghost" @click="showDeleteAlert = false">Cancel</Button>
+          <Button variant="destructive" @click="deleteTicket">
+            <Trash2 class="w-5 h-5 mr-2"/>
+            Delete
+          </Button>
+          <Button variant="ghost" @click="showDeleteAlert = false">
+            <X class="w-5 h-5 mr-2"/>
+            Cancel
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Trash2, X, Send } from 'lucide-vue-next';
 
 import { useAuth } from '@/composables/auth';
 import { Bell } from 'lucide-vue-next';
@@ -178,10 +179,8 @@ onMounted(() => {
             <!-- Delete button (Admin only) -->
             <div v-if="isAdmin" class="ml-2 flex-shrink-0" @click.stop>
               <Button variant="destructive" size="icon" @click="deleteNotification(notification.id)">
+                <Trash2 class="w-4 h-4" />
                 <span class="sr-only">Delete</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round"
-                                               d="M6 18L18 6M6 6l12 12"/></svg>
               </Button>
             </div>
           </div>
@@ -233,9 +232,11 @@ onMounted(() => {
                 </div>
                 <DialogFooter class="flex justify-end mt-6 space-x-3">
                   <Button v-if="isAdmin" variant="destructive" @click="deleteNotification(selectedItem.id)">
+                    <Trash2 class="w-4 h-4 mr-1" />
                     Delete
                   </Button>
                   <Button variant="outline" @click="closeDialog('view')">
+                    <X class="w-4 h-4 mr-1" />
                     Close
                   </Button>
                 </DialogFooter>
@@ -271,9 +272,11 @@ onMounted(() => {
               </div>
               <DialogFooter class="flex justify-end space-x-3 mt-6">
                 <Button variant="outline" @click="cancelNewNotification">
+                  <X class="w-4 h-4 mr-1" />
                   Cancel
                 </Button>
                 <Button class="bg-blue-600 hover:bg-blue-700 text-white shadow" @click="sendNotification">
+                  <Send class="w-4 h-4 mr-1" />
                   Send
                 </Button>
               </DialogFooter>

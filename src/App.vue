@@ -3,6 +3,6 @@ import {Toaster} from "vue-sonner";
 </script>
 
 <template>
-  <Toaster position="bottom-right" />
+  <Toaster position="top-right" />
   <RouterView />
 </template>

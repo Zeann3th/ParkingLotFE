@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Pencil, X } from 'lucide-vue-next';
+import { Trash2, Pencil, X, Save } from 'lucide-vue-next';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Vehicle>({ limit: 20 });
 const isEditing = ref(false);
@@ -303,7 +303,7 @@ const getVehicleTypeIcon = (type: string | undefined) => {
                   <div class="flex justify-between items-start py-1">
                     <span class="text-sm font-medium text-gray-500 w-1/3">Type</span>
                     <span v-if="!isEditing" class="text-sm text-gray-800 text-right">{{ selectedItem.type }}</span>
-                    <InputText v-else v-model="selectedItem.type" inputId="updateVehicleType" />
+                    <InputText v-else v-model="selectedItem.type" inputId="updateVehicleType"/>
                   </div>
                   <div class="flex justify-between items-start py-1">
                     <span class="text-sm font-medium text-gray-500 w-1/3">Created At</span>
@@ -317,10 +317,11 @@ const getVehicleTypeIcon = (type: string | undefined) => {
               </div>
               <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-lg">
                 <template v-if="selectedItem">
-                  <Button v-if="isAdmin && !isEditing" variant="secondary" @click="isEditing = true">
+                  <Button v-if="isAdmin && !isEditing" variant="secondary" @click="isEditing = true" class="bg-blue-600 text-white hover:bg-blue-700">
                     <Pencil class="w-4 h-4 mr-1" /> Edit
                   </Button>
-                  <Button v-else-if="isAdmin && isEditing" variant="secondary" @click="updateVehicle">
+                  <Button v-else-if="isAdmin && isEditing" variant="secondary" @click="updateVehicle" class="bg-green-600 text-white hover:bg-green-700" :disabled="!selectedItem.plate || !selectedItem.type">
+                    <Save class="w-4 h-4 mr-1" />
                     Save
                   </Button>
                   <Button v-if="isAdmin" variant="destructive" @click="deleteVehicle(selectedItem.id)">
@@ -348,9 +349,11 @@ const getVehicleTypeIcon = (type: string | undefined) => {
             <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-xl">
               <Button v-if="isPrivileged" variant="secondary" @click="createVehicle"
                       :disabled="!createVehiclePayload.plate || !createVehiclePayload.type">
+                <Save class="w-4 h-4 mr-1"/>
                 Save
               </Button>
               <Button variant="ghost" @click="closeDialogAndResetCreateForm">
+                <X class="w-4 h-4 mr-1" />
                 Cancel
               </Button>
             </DialogFooter>

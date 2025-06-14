@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import Avatar from '@/components/Avatar.vue';
 import { useAuth } from '@/composables/auth';
+import {Menu} from 'lucide-vue-next';
 
 defineProps<{
   items: Array<{ label: string, icon?: any, url?: string }>,
@@ -30,7 +31,7 @@ function closeDrawer() {
   <div class="bg-white min-h-screen flex flex-col">
     <nav class="w-full border-b bg-white/80 backdrop-blur-md shadow-sm flex items-center justify-between px-4 py-3">
       <button @click="drawerOpen = true" class="p-2 rounded hover:bg-blue-50">
-        <span class="pi pi-bars text-2xl text-blue-700"></span>
+        <Menu class="w-6 h-6 text-gray-700" />
       </button>
       <RouterLink to="/" class="flex items-center space-x-2">
         <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg">

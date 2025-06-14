@@ -16,6 +16,7 @@ import InputNumber from '@/components/InputNumber.vue';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {PlayIcon, Pencil, Save, Trash2, X, ClipboardPlus} from "lucide-vue-next";
 
 const { isLoading, isMutated, page, limit, maxPage, isDetailLoading, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Section>();
 const router = useRouter();
@@ -134,6 +135,34 @@ onMounted(() => {
   getAllSections();
   isMutated.value = false;
 });
+
+const reportRevenue = ref<number|null>(null);
+const showReport = ref(false);
+const reportDates = ref<{from: string|null, to: string|null}>({ from: null, to: null });
+
+const fetchReport = async () => {
+  if (!selectedItem.value?.id) return;
+  try {
+    const fromISO = reportDates.value.from ? new Date(reportDates.value.from).toISOString() : undefined;
+    const toISO = reportDates.value.to ? new Date(reportDates.value.to).toISOString() : undefined;
+    const res = await sectionService.report(selectedItem.value.id, { from: fromISO, to: toISO });
+    reportRevenue.value = res.revenue;
+  } catch (error) {
+    toast.error('Failed to fetch report');
+  }
+};
+
+const openReport = () => {
+  showReport.value = true;
+  reportRevenue.value = null;
+  reportDates.value = { from: null, to: null };
+};
+
+const closeReport = () => {
+  showReport.value = false;
+  reportRevenue.value = null;
+  reportDates.value = { from: null, to: null };
+};
 </script>
 
 <template>
@@ -169,8 +198,8 @@ onMounted(() => {
 
         <!-- Section Detail Dialog -->
         <Dialog v-model:open="dialogs.view">
-          <DialogContent class="max-w-lg w-full p-0">
-            <div>
+          <DialogContent class="max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div class="flex-1 overflow-y-auto">
               <div class="flex justify-between items-center p-5 border-b border-blue-100">
                 <h2 class="text-xl font-semibold text-gray-800">Section Details</h2>
               </div>
@@ -199,7 +228,7 @@ onMounted(() => {
                   </div>
                   <div v-if="isEditing" class="flex justify-between items-start py-1">
                     <span class="text-sm font-medium text-gray-500 w-1/3">Assign to user(s)</span>
-                    <InputText v-model="users" inputId="updateSectionUser" />
+                    <InputText v-model="users" inputId="updateSectionUser" placeholder="User IDs separated by commas" />
                   </div>
                   <div class="flex justify-between items-start py-1">
                     <span class="text-sm font-medium text-gray-500 w-1/3">Created At</span>
@@ -209,28 +238,73 @@ onMounted(() => {
                     <span class="text-sm font-medium text-gray-500 w-1/3">Updated At</span>
                     <span class="text-sm text-gray-800 text-right">{{ new Date(selectedItem.updatedAt).toLocaleString() }}</span>
                   </div>
+
+                  <!-- Report Section -->
+                  <div v-if="showReport" class="mt-6 p-4 border rounded-lg bg-gray-50">
+                    <div class="flex justify-between items-center mb-3">
+                      <h3 class="text-lg font-medium text-gray-800">Revenue Report</h3>
+                      <Button variant="ghost" size="sm" @click="closeReport" class="h-8 w-8 p-0">
+                        <X class="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <input
+                            type="date"
+                            v-model="reportDates.from"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <input
+                            type="date"
+                            v-model="reportDates.to"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <Button @click="fetchReport" class="bg-blue-600 hover:bg-blue-700 text-white">
+                        Generate Report
+                      </Button>
+                      <div v-if="reportRevenue !== null" class="text-green-700 font-semibold">
+                        Revenue: ${{ reportRevenue.toLocaleString() }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-lg">
-                <template v-if="selectedItem && !isDetailLoading">
-                  <Button v-if="isPrivilleged" variant="secondary" @click="startParkingSession">
-                    Start Session
-                  </Button>
-                  <Button v-if="isAdmin && !isEditing" variant="secondary" @click="handleEdit">
-                    Edit
-                  </Button>
-                  <Button v-else-if="isAdmin && isEditing" variant="secondary" @click="updateSection">
-                    Save
-                  </Button>
-                  <Button v-if="isAdmin" variant="destructive" @click="deleteSection(selectedItem.id)">
-                    Delete
-                  </Button>
-                  <Button variant="ghost" @click="() => { closeDialog('view'); isEditing = false }">
-                    Close
-                  </Button>
-                </template>
-              </DialogFooter>
             </div>
+            <DialogFooter class="flex-shrink-0 flex flex-wrap justify-end gap-2 p-4 border-t border-blue-100 bg-blue-50 rounded-b-lg">
+              <template v-if="selectedItem && !isDetailLoading">
+                <Button v-if="isPrivilleged && !isEditing" variant="secondary" @click="startParkingSession" class="bg-green-600 hover:bg-green-700 text-white">
+                  <PlayIcon class="w-4 h-4 mr-1"/>
+                  Start Session
+                </Button>
+                <Button v-if="isPrivilleged && !isEditing" variant="secondary" @click="openReport" class="bg-indigo-600 hover:bg-indigo-700 text-white">
+                  <ClipboardPlus class="w-4 h-4 mr-1"/>
+                  Report
+                </Button>
+                <Button v-if="isAdmin && !isEditing" variant="secondary" @click="handleEdit" class="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Pencil class="w-4 h-4 mr-1"/>
+                  Edit
+                </Button>
+                <Button v-else-if="isAdmin && isEditing" variant="secondary" @click="updateSection" class="bg-green-600 hover:bg-green-700 text-white">
+                  <Save class="w-4 h-4 mr-1"/>
+                  Save
+                </Button>
+                <Button v-if="isAdmin" variant="destructive" @click="deleteSection(selectedItem.id)">
+                  <Trash2 class="w-4 h-4 mr-1"/>
+                  Delete
+                </Button>
+                <Button variant="ghost" @click="() => { closeDialog('view'); isEditing = false; closeReport(); }">
+                  <X class="w-4 h-4 mr-1"/>
+                  Close
+                </Button>
+              </template>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -239,9 +313,6 @@ onMounted(() => {
           <DialogContent class="max-w-md w-full p-0">
             <div class="flex justify-between items-center p-5 border-b border-blue-100">
               <h2 class="text-xl font-semibold text-gray-800">Create New Section</h2>
-              <Button variant="ghost" size="icon" @click="closeDialog('create')" aria-label="Close dialog">
-                <span class="text-lg">×</span>
-              </Button>
             </div>
             <div class="p-5 md:p-6 space-y-4">
               <InputText v-model="createSectionPayload.name" inputId="createSectionName" placeholder="Enter section name" />
@@ -249,10 +320,12 @@ onMounted(() => {
             </div>
             <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-xl">
               <Button v-if="isAdmin" variant="secondary" @click="createSection"
-                      :disabled="!createSectionPayload.name || createSectionPayload.capacity <= 0">
+                      :disabled="!createSectionPayload.name || createSectionPayload.capacity <= 0" class="bg-green-600 hover:bg-green-700 text-white">
+                <Save class="w-5 h-5 mr-2"/>
                 Save
               </Button>
               <Button variant="ghost" @click="closeDialog('create')">
+                <X class="w-5 h-5 mr-2"/>
                 Close
               </Button>
             </DialogFooter>

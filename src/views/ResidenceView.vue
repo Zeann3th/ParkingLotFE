@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import MenuLayout from '@/components/Menu/MenuLayout.vue';
 import type { CreateResidence, Residence, User, Vehicle } from '@/types';
-import { RefreshCw, Trash2, Pencil, Save } from "lucide-vue-next";
+import { RefreshCw, Trash2, Pencil, Save, X } from "lucide-vue-next";
 import { residenceService } from '@/services/residence.service';
 import FloatingButton from '@/components/FloatingButton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
@@ -418,7 +418,7 @@ const handleScroll = () => {
                         </div>
                         <Button v-if="isEditing && isAdmin" variant="destructive" size="icon"
                                 @click="removeResident(resident.id)">
-                          <Trash2 />
+                          <Trash2 class="w-5 h-5 mr-2"/>
                         </Button>
                       </div>
                     </div>
@@ -466,7 +466,7 @@ const handleScroll = () => {
                         </div>
                         <Button v-if="isEditing && isAdmin" variant="destructive" size="icon"
                                 @click="removeVehicle(vehicle.id)">
-                          <Trash2 />
+                          <Trash2 class="w-5 h-5 mr-2"/>
                         </Button>
                       </div>
                     </div>
@@ -548,10 +548,12 @@ const handleScroll = () => {
                       Save
                     </Button>
                     <Button v-if="isAdmin" variant="outline" @click="toggleEditMode">
+                      <X class="w-5 h-5 mr-2" />
                       Cancel Edit
                     </Button>
                   </template>
                   <Button variant="ghost" @click="closeDialogAndReset('view')">
+                    <X class="w-5 h-5 mr-2" />
                     Close
                   </Button>
                 </template>
@@ -565,9 +567,6 @@ const handleScroll = () => {
           <DialogContent class="max-w-md w-full p-0">
             <div class="flex justify-between items-center p-5 border-b border-blue-100">
               <h2 class="text-xl font-semibold text-gray-800">Create New Residence</h2>
-              <Button variant="ghost" size="icon" @click="closeDialog('create')" aria-label="Close dialog">
-                <span class="text-lg">×</span>
-              </Button>
             </div>
             <div class="p-5 md:p-6 space-y-4">
               <InputText v-model="createResidencePayload.building" inputId="createResidenceBuilding"
@@ -577,10 +576,12 @@ const handleScroll = () => {
             </div>
             <DialogFooter class="flex justify-end gap-3 p-4 border-t border-blue-100 bg-blue-50 rounded-b-xl">
               <Button v-if="isAdmin" variant="secondary" @click="createResidence"
-                      :disabled="!createResidencePayload.building || createResidencePayload.room <= 0">
+                      :disabled="!createResidencePayload.building || createResidencePayload.room <= 0" class="bg-green-600 hover:bg-green-700 text-white">
+                <Save class="w-5 h-5 mr-2"/>
                 Save
               </Button>
               <Button variant="ghost" @click="closeDialog('create')">
+                <X class="w-5 h-5 mr-2"/>
                 Cancel
               </Button>
             </DialogFooter>
