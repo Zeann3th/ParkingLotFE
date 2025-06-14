@@ -632,6 +632,21 @@ const closeCreateDialog = () => {
       </div>
     </div>
 
+    <Dialog :open="showDeleteAlert" @update:open="(open) => !open && (showDeleteAlert = false)">
+      <DialogContent class="max-w-[400px] w-[95%]">
+        <DialogHeader>
+          <DialogTitle>Confirm Deletion</DialogTitle>
+        </DialogHeader>
+        <div class="py-4 text-center">
+          Are you sure you want to delete this ticket? This action cannot be undone.
+        </div>
+        <div class="flex justify-end gap-3">
+          <Button variant="destructive" @click="deleteTicket">Delete</Button>
+          <Button variant="ghost" @click="showDeleteAlert = false">Cancel</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <FloatingButton v-if="isPrivilledged" icon="+" @click="openDialog('create')" aria-label="Add new ticket" />
   </MenuLayout>
   <ConfirmDialog class="!bg-white !text-black" acceptClass="!bg-green-500 !hover:bg-green-700 !text-white"
