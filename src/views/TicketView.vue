@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Dialog, Button, useToast, useConfirm, ConfirmDialog } from 'primevue';
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
+import {Button, ConfirmDialog, Dialog, useConfirm, useToast} from 'primevue';
 import MenuLayout from '@/components/MenuLayout.vue';
-import { type User, type CreateTicket, type Ticket, type Vehicle, type ReserveTicket } from '@/types';
-import { ticketService } from '@/services/ticket.service';
+import {type CreateTicket, type ReserveTicket, type Ticket, type User, type Vehicle} from '@/types';
+import {ticketService} from '@/services/ticket.service';
 import Skeleton from '@/components/Skeleton.vue';
 import EmptyMessage from '@/components/EmptyMessage.vue';
 import FloatingButton from '@/components/FloatingButton.vue';
-import { useState } from '@/composables/state';
+import {useState} from '@/composables/state';
 import Title from '@/components/Title.vue';
 import InputText from '@/components/InputText.vue';
 import InputNumber from '@/components/InputNumber.vue';
-import { useAuth } from '@/composables/auth';
-import { userService } from '@/services/user.service';
-import { vehicleService } from '@/services/vehicle.service';
+import {useAuth} from '@/composables/auth';
+import {userService} from '@/services/user.service';
+import {vehicleService} from '@/services/vehicle.service';
 import debounce from 'lodash.debounce';
 
 const { isLoading, isMutated, page, limit, maxPage, dialogs, openDialog, closeDialog, selectedItem, itemList } = useState<Ticket>({ limit: 20 });
@@ -95,7 +95,7 @@ const createTicket = async () => {
     user.value = null;
     userInput.value = null;
     users.value = [];
-    getAllTickets();
+    await getAllTickets();
   }
 }
 
@@ -111,7 +111,7 @@ const updateTicket = async () => {
   } finally {
     isEditing.value = false;
     closeDialog("view");
-    getAllTickets();
+    await getAllTickets();
   }
 }
 
@@ -135,7 +135,7 @@ const deleteTicket = (id: number | undefined) => {
         });
       } finally {
         closeDialog("view");
-        getAllTickets();
+        await getAllTickets();
       }
     }
   });
@@ -150,7 +150,7 @@ const cancelTicketSubscription = async () => {
     toast.add({ severity: 'error', summary: 'Error', detail: "error", life: 3000, });
   } finally {
     closeDialog("view");
-    getAllTickets();
+    await getAllTickets();
   }
 }
 
@@ -166,7 +166,7 @@ const registerTicket = async () => {
   } finally {
     isEditing.value = false;
     closeDialog("view");
-    getAllTickets();
+    await getAllTickets();
   }
 }
 
@@ -263,7 +263,7 @@ const debouncedVehicleSearch = debounce(async (value: string) => {
 
   if (value) {
     try {
-      vehicles.value = await vehicleService.search({ plate: value });
+      vehicles.value = await vehicleService.search(value);
       isVehicleDropdownVisible.value = vehicles.value.length > 0;
     } catch (error) {
       toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load vehicles', life: 3000 });
@@ -288,8 +288,7 @@ const debouncedUserSearch = debounce(async (value: string | null) => {
       params.name = value;
     }
     try {
-      const res = await userService.search(params);
-      users.value = res;
+      users.value = await userService.search(params);
       isUserDropdownVisible.value = users.value.length > 0;
     } catch (error) {
       toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load users', life: 3000, });
