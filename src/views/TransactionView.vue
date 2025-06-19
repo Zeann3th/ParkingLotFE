@@ -78,10 +78,10 @@ const deleteTransaction = async (id: number | undefined) => {
 const checkout = async (transactionId: number, event?: Event) => {
   if (event) event.stopPropagation();
   try {
-    await axios.post(`/transactions/${transactionId}/checkout`, {}, {
+    const response = await axios.post(`/transactions/${transactionId}/checkout`, {}, {
       headers: { Authorization: `Bearer ${memoryStorage.getToken()}` }
     });
-    toast.success('Checkout successful');
+    window.location.href = response.data.order_url;
     await getAllTransactions();
     closeDialog('view');
   } catch (error) {
