@@ -22,14 +22,14 @@ type MenuEntry = {
 
 const items = ref<MenuEntry[]>([
   { label: "Dashboard", icon: BarChart, url: "/dashboard" },
+  { label: "Tickets", icon: Ticket, url: "/tickets" },
+  { label: "Residences", icon: Home, url: "/residences" },
 ]);
 
 if (role.value === "ADMIN" || role.value === "SECURITY") {
   items.value.push(
-      { label: "Tickets", icon: Ticket, url: "/tickets" },
-      { label: "Residences", icon: Home, url: "/residences" },
-      { label: "Sections", icon: Warehouse, url: "/sections" },
-      { label: "Vehicles", icon: Car, url: "/vehicles" },
+    { label: "Sections", icon: Warehouse, url: "/sections" },
+    { label: "Vehicles", icon: Car, url: "/vehicles" },
   );
 }
 
